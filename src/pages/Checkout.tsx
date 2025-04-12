@@ -20,7 +20,7 @@ interface CheckoutFormData {
 
 const Checkout = () => {
   const { items, getCartTotal, clearCart } = useCart();
-  const { orders } = useAdmin();
+  const { orders, addOrder, products, updateProductStock } = useAdmin();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState<CheckoutFormData>({
@@ -40,9 +40,35 @@ const Checkout = () => {
     });
   };
   
+  // Check if there's enough stock for all items
+  const checkStock = () => {
+    const insufficientItems = items.filter(item => {
+      const product = products.find(p => p.id === item.id);
+      return product && product.stock < item.quantity;
+    });
+    
+    if (insufficientItems.length > 0) {
+      const itemNames = insufficientItems.map(item => item.name).join(', ');
+      toast({
+        title: "Insufficient stock",
+        description: `We don't have enough stock for: ${itemNames}`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    return true;
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
+    // Check stock before proceeding
+    if (!checkStock()) {
+      setIsSubmitting(false);
+      return;
+    }
     
     try {
       // Create order
@@ -67,11 +93,20 @@ const Checkout = () => {
       
       // Send confirmation email
       const emailDetails = generateOrderConfirmationEmail(newOrder);
-      await sendEmail(emailDetails);
+      const emailSent = await sendEmail(emailDetails);
       
-      // Save order to localStorage
-      const updatedOrders = [...orders, newOrder];
-      localStorage.setItem('orders', JSON.stringify(updatedOrders));
+      if (!emailSent) {
+        console.error('Failed to send order confirmation email');
+        toast({
+          title: "Email delivery issue",
+          description: "We couldn't send the confirmation email. Please check your email address.",
+          variant: "destructive",
+        });
+      }
+      
+      // Save order and update product stock
+      addOrder(newOrder);
+      updateProductStock(items.map(item => ({ id: item.id, quantity: item.quantity })));
       
       // Clear cart
       clearCart();
@@ -79,7 +114,9 @@ const Checkout = () => {
       // Show success message
       toast({
         title: "Order placed successfully",
-        description: "Thank you for your order. We'll process it shortly.",
+        description: emailSent 
+          ? "Thank you for your order. We've sent a confirmation to your email."
+          : "Thank you for your order. We'll process it shortly.",
       });
       
       // Redirect to confirmation page

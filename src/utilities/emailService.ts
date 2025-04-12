@@ -8,15 +8,41 @@ export interface EmailDetails {
 }
 
 export const sendEmail = async (details: EmailDetails): Promise<boolean> => {
+  // In a real app, you would use a mail service API here
+  // For now, we'll log the details and simulate success
+  
   try {
-    // In a real application, this would call an API endpoint to send the email
-    // For demo purposes, we'll just simulate a successful email send
-    console.log('Sending email:', details);
+    console.log('Sending email to:', details.to);
+    console.log('Subject:', details.subject);
+    console.log('Body:', details.body);
+    
+    // Validate email format
+    if (!isValidEmail(details.to)) {
+      console.error('Invalid email address:', details.to);
+      toast({
+        title: "Invalid email address",
+        description: "Please provide a valid email address.",
+        variant: "destructive",
+      });
+      return false;
+    }
     
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Simulate success
+    // For a real implementation, you would use a backend API here.
+    // However, browser-side JavaScript cannot send emails directly due to security restrictions.
+    // In a production app, you would:
+    // 1. Call a server endpoint (e.g., fetch('/api/send-email', { method: 'POST', body: JSON.stringify(details) }))
+    // 2. The server would use a service like SendGrid, Mailgun, etc. to send the actual email
+    
+    // For this demo, we'll show an informational toast about email limitations
+    toast({
+      title: "Email Functionality Note",
+      description: "In a production environment, this would send a real email via a backend service. For now, check the console to see the email content.",
+    });
+    
+    // Return success (in a real app, this would be the API response)
     return true;
   } catch (error) {
     console.error('Error sending email:', error);
@@ -27,6 +53,12 @@ export const sendEmail = async (details: EmailDetails): Promise<boolean> => {
     });
     return false;
   }
+};
+
+// Email validation helper
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 };
 
 export const generateOrderConfirmationEmail = (

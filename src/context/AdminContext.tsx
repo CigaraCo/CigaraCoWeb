@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -10,6 +9,7 @@ export interface Product {
   images: string[];
   category: string;
   featured: boolean;
+  stock: number;
 }
 
 export interface Order {
@@ -34,13 +34,16 @@ export interface Order {
 interface AdminContextType {
   products: Product[];
   orders: Order[];
-  addProduct: (product: Omit<Product, 'id'>) => void;
-  updateProduct: (id: string, product: Partial<Product>) => void;
+  addProduct: (productData: Omit<Product, 'id'>) => Product;
+  updateProduct: (id: string, productData: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
+  addOrder: (order: Order) => void;
   updateOrderStatus: (id: string, status: Order['status']) => void;
+  deleteOrder: (id: string) => void;
   isAuthenticated: boolean;
   login: (username: string, password: string) => boolean;
   logout: () => void;
+  updateProductStock: (items: { id: string; quantity: number }[]) => void;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -53,7 +56,6 @@ export const useAdmin = () => {
   return context;
 };
 
-// Sample products data
 const initialProducts: Product[] = [
   {
     id: "1",
@@ -62,7 +64,8 @@ const initialProducts: Product[] = [
     price: 29.99,
     images: ["https://images.unsplash.com/photo-1610261041218-6f6d3f27124c?q=80&w=800&auto=format&fit=crop"],
     category: "cigarette-case",
-    featured: true
+    featured: true,
+    stock: 10
   },
   {
     id: "2",
@@ -71,7 +74,8 @@ const initialProducts: Product[] = [
     price: 34.99,
     images: ["https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=800&auto=format&fit=crop"],
     category: "terea-box",
-    featured: true
+    featured: true,
+    stock: 10
   },
   {
     id: "3",
@@ -80,11 +84,11 @@ const initialProducts: Product[] = [
     price: 24.99,
     images: ["https://images.unsplash.com/photo-1579705379575-25b6259e69fe?q=80&w=800&auto=format&fit=crop"],
     category: "cigarette-case",
-    featured: false
+    featured: false,
+    stock: 10
   },
 ];
 
-// Sample orders data
 const initialOrders: Order[] = [
   {
     id: "order1",
@@ -109,11 +113,26 @@ const initialOrders: Order[] = [
 ];
 
 export const AdminProvider = ({ children }: { children: ReactNode }) => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => {
+    const savedProducts = localStorage.getItem('products');
+    if (savedProducts) {
+      try {
+        const parsedProducts = JSON.parse(savedProducts);
+        return parsedProducts.map((product: Product) => ({
+          ...product,
+          stock: product.stock !== undefined ? product.stock : 10,
+        }));
+      } catch (error) {
+        console.error('Failed to parse products from localStorage:', error);
+        return [];
+      }
+    }
+    return [];
+  });
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Load products and orders from localStorage on initial render
   useEffect(() => {
     const savedProducts = localStorage.getItem('products');
     const savedOrders = localStorage.getItem('orders');
@@ -140,14 +159,12 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
       setOrders(initialOrders);
     }
 
-    // Check if admin is logged in
     const adminAuth = localStorage.getItem('adminAuth');
     if (adminAuth === 'true') {
       setIsAuthenticated(true);
     }
   }, []);
 
-  // Save products and orders to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('products', JSON.stringify(products));
   }, [products]);
@@ -156,26 +173,31 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('orders', JSON.stringify(orders));
   }, [orders]);
 
-  const addProduct = (product: Omit<Product, 'id'>) => {
-    const newProduct: Product = {
-      ...product,
-      id: Date.now().toString(),
+  const addProduct = (productData: Omit<Product, 'id'>) => {
+    const newProduct = {
+      ...productData,
+      id: `prod-${Date.now().toString().slice(-6)}`,
+      stock: productData.stock || 10,
     };
     
     setProducts(prevProducts => [...prevProducts, newProduct]);
     
     toast({
       title: "Product added",
-      description: `${product.name} has been added successfully`,
+      description: `${newProduct.name} has been added to your inventory`,
     });
+    
+    return newProduct;
   };
 
-  const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts(prevProducts => 
-      prevProducts.map(product => 
-        product.id === id ? { ...product, ...updates } : product
-      )
-    );
+  const updateProduct = (id: string, productData: Partial<Product>) => {
+    setProducts(prevProducts => {
+      return prevProducts.map(product => 
+        product.id === id 
+          ? { ...product, ...productData } 
+          : product
+      );
+    });
     
     toast({
       title: "Product updated",
@@ -196,6 +218,15 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const addOrder = (order: Order) => {
+    setOrders(prevOrders => [...prevOrders, order]);
+    
+    toast({
+      title: "Order added",
+      description: `Order #${order.id} has been added`,
+    });
+  };
+
   const updateOrderStatus = (id: string, status: Order['status']) => {
     setOrders(prevOrders => 
       prevOrders.map(order => 
@@ -209,9 +240,26 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const deleteOrder = (id: string) => {
+    setOrders(prevOrders => {
+      return prevOrders.filter(order => order.id !== id);
+    });
+  };
+
+  const updateProductStock = (items: { id: string; quantity: number }[]) => {
+    setProducts(prevProducts => {
+      return prevProducts.map(product => {
+        const orderItem = items.find(item => item.id === product.id);
+        if (orderItem) {
+          const newStock = Math.max(0, product.stock - orderItem.quantity);
+          return { ...product, stock: newStock };
+        }
+        return product;
+      });
+    });
+  };
+
   const login = (username: string, password: string) => {
-    // Simple authentication for demo purposes
-    // In a real application, you'd verify against a backend
     if (username === "admin" && password === "admin123") {
       setIsAuthenticated(true);
       localStorage.setItem('adminAuth', 'true');
@@ -232,10 +280,13 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
       addProduct,
       updateProduct,
       deleteProduct,
+      addOrder,
       updateOrderStatus,
+      deleteOrder,
       isAuthenticated,
       login,
-      logout
+      logout,
+      updateProductStock
     }}>
       {children}
     </AdminContext.Provider>

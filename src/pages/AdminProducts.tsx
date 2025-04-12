@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
@@ -41,6 +40,7 @@ interface ProductFormData {
   images: string[];
   category: string;
   featured: boolean;
+  stock: number;
 }
 
 const AdminProducts = () => {
@@ -57,12 +57,12 @@ const AdminProducts = () => {
     price: 0,
     images: [],
     category: 'cigarette-case',
-    featured: false
+    featured: false,
+    stock: 10
   };
   
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   
-  // Reset form when dialog closes
   React.useEffect(() => {
     if (!isDialogOpen) {
       setFormData(initialFormData);
@@ -109,8 +109,6 @@ const AdminProducts = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
-    // In a real application, you'd upload to a server or storage service
-    // For this demo, we'll use a file reader to create a data URL
     const file = files[0];
     const reader = new FileReader();
     
@@ -125,7 +123,6 @@ const AdminProducts = () => {
     
     reader.readAsDataURL(file);
     
-    // Reset the input
     e.target.value = '';
   };
   
@@ -149,10 +146,8 @@ const AdminProducts = () => {
     }
     
     if (editingProduct && editingProduct.id) {
-      // Update existing product
       updateProduct(editingProduct.id, formData);
     } else {
-      // Add new product
       addProduct(formData);
     }
     
@@ -160,14 +155,12 @@ const AdminProducts = () => {
   };
   
   const handleAddPlaceholderImage = () => {
-    // Add a placeholder image from Unsplash
     const placeholderImages = [
       "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=800&auto=format&fit=crop",
       "https://images.unsplash.com/photo-1579705379575-25b6259e69fe?q=80&w=800&auto=format&fit=crop",
       "https://images.unsplash.com/photo-1610261041218-6f6d3f27124c?q=80&w=800&auto=format&fit=crop"
     ];
     
-    // Select a random image
     const randomImage = placeholderImages[Math.floor(Math.random() * placeholderImages.length)];
     
     setFormData({
@@ -201,6 +194,7 @@ const AdminProducts = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Stock</TableHead>
                   <TableHead>Featured</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -208,7 +202,7 @@ const AdminProducts = () => {
               <TableBody>
                 {products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6">
+                    <TableCell colSpan={7} className="text-center py-6">
                       No products found
                     </TableCell>
                   </TableRow>
@@ -228,6 +222,11 @@ const AdminProducts = () => {
                       <TableCell>${product.price.toFixed(2)}</TableCell>
                       <TableCell>
                         <span className="capitalize">{product.category.replace('-', ' ')}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={product.stock <= 0 ? 'text-red-500 font-medium' : ''}>
+                          {product.stock <= 0 ? 'Out of stock' : product.stock}
+                        </span>
                       </TableCell>
                       <TableCell>
                         {product.featured ? 'Yes' : 'No'}
@@ -259,7 +258,6 @@ const AdminProducts = () => {
         </CardContent>
       </Card>
       
-      {/* Product Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -320,6 +318,19 @@ const AdminProducts = () => {
                   <option value="cigarette-case">Cigarette Case</option>
                   <option value="terea-box">TEREA Box</option>
                 </select>
+              </div>
+              
+              <div>
+                <Label htmlFor="stock">Stock Quantity</Label>
+                <Input
+                  id="stock"
+                  name="stock"
+                  type="number"
+                  min="0"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                  required
+                />
               </div>
               
               <div className="flex items-center space-x-2">
@@ -394,7 +405,6 @@ const AdminProducts = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
