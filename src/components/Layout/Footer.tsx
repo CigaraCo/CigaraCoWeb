@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -44,8 +46,15 @@ const Footer = () => {
           </div>
         </div>
         
-        <div className="border-t border-cream/20 mt-8 pt-8 text-center text-cream/60">
-          <p>&copy; {currentYear} Cigára Co. All rights reserved.</p>
+        <div className="border-t border-cream/20 mt-8 pt-8 flex items-center justify-between">
+          <p className="text-cream/60">&copy; {currentYear} Cigára Co. All rights reserved.</p>
+          
+          <Link to="/admin">
+            <Button variant="ghost" className="text-cream/60 hover:text-cream">
+              <Shield className="mr-2 h-4 w-4" />
+              Admin Portal
+            </Button>
+          </Link>
         </div>
       </div>
     </footer>
@@ -53,3 +62,4 @@ const Footer = () => {
 };
 
 export default Footer;
+
