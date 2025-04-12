@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/context/AdminContext';
 import { useCart } from '@/context/CartContext';
@@ -22,8 +22,23 @@ const ProductDetails = () => {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [showSoldOutDialog, setShowSoldOutDialog] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
+  const [displayImage, setDisplayImage] = useState('');
   
   const product = products.find(p => p.id === id);
+  
+  useEffect(() => {
+    if (product) {
+      // Initialize with the first product image
+      setDisplayImage(product.images[0]);
+      
+      // If product has variants, select the first one by default
+      if (product.variants && product.variants.length > 0) {
+        setSelectedVariant(product.variants[0].id);
+        setDisplayImage(product.variants[0].image);
+      }
+    }
+  }, [product]);
   
   if (!product) {
     return (
@@ -39,10 +54,21 @@ const ProductDetails = () => {
     );
   }
   
-  // Check if product is in stock
-  const isOutOfStock = product.stock <= 0;
+  // Get the current variant's stock if selected
+  const currentVariant = selectedVariant 
+    ? product.variants?.find(v => v.id === selectedVariant)
+    : null;
   
-  React.useEffect(() => {
+  // Check if product or selected variant is in stock
+  const isOutOfStock = currentVariant
+    ? currentVariant.stock <= 0
+    : product.stock <= 0;
+  
+  const availableStock = currentVariant
+    ? currentVariant.stock
+    : product.stock;
+  
+  useEffect(() => {
     // Show sold out dialog when navigating to out-of-stock product
     if (isOutOfStock) {
       setShowSoldOutDialog(true);
@@ -53,17 +79,30 @@ const ProductDetails = () => {
     const newQuantity = quantity + amount;
     
     // Don't allow quantity to exceed available stock
-    if (newQuantity > 0 && newQuantity <= product.stock) {
+    if (newQuantity > 0 && newQuantity <= availableStock) {
       setQuantity(newQuantity);
+    }
+  };
+  
+  const handleVariantSelect = (variantId: string) => {
+    setSelectedVariant(variantId);
+    const variant = product.variants?.find(v => v.id === variantId);
+    if (variant) {
+      setDisplayImage(variant.image);
+      
+      // Reset quantity if necessary
+      if (quantity > variant.stock) {
+        setQuantity(variant.stock > 0 ? 1 : 0);
+      }
     }
   };
   
   const handleAddToCart = () => {
     // Double check if we have enough stock
-    if (quantity > product.stock) {
+    if (quantity > availableStock) {
       toast({
         title: "Not enough stock",
-        description: `Only ${product.stock} units available.`,
+        description: `Only ${availableStock} units available.`,
         variant: "destructive",
       });
       return;
@@ -71,10 +110,11 @@ const ProductDetails = () => {
     
     addItem({
       id: product.id,
-      name: product.name,
+      name: product.name + (currentVariant ? ` - ${currentVariant.name}` : ''),
       price: product.price,
-      image: product.images[0],
-      quantity
+      image: displayImage,
+      quantity,
+      variantId: selectedVariant || undefined
     });
     
     navigate('/cart');
@@ -87,7 +127,7 @@ const ProductDetails = () => {
           <div>
             <div className="bg-white rounded-lg overflow-hidden shadow-sm relative">
               <img
-                src={product.images[0]}
+                src={displayImage}
                 alt={product.name}
                 className={`w-full h-full object-cover object-center ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
               />
@@ -99,6 +139,36 @@ const ProductDetails = () => {
                 </div>
               )}
             </div>
+            
+            {/* Variant images */}
+            {product.variants && product.variants.length > 0 && (
+              <div className="grid grid-cols-4 gap-2 mt-4">
+                {product.variants.map((variant) => (
+                  <button
+                    key={variant.id}
+                    className={`relative overflow-hidden rounded-md border-2 ${
+                      selectedVariant === variant.id 
+                        ? 'border-charcoal' 
+                        : 'border-transparent'
+                    }`}
+                    onClick={() => handleVariantSelect(variant.id)}
+                  >
+                    <img
+                      src={variant.image}
+                      alt={variant.name}
+                      className={`w-full h-20 object-cover ${
+                        variant.stock <= 0 ? 'opacity-50 grayscale' : ''
+                      }`}
+                    />
+                    {variant.stock <= 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                        <p className="text-white text-xs font-medium">Sold Out</p>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           
           <div>
@@ -109,9 +179,32 @@ const ProductDetails = () => {
               <p className="text-dark-gray">{product.description}</p>
             </div>
             
+            {/* Variant selection */}
+            {product.variants && product.variants.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium mb-3">Variants:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((variant) => (
+                    <button
+                      key={variant.id}
+                      onClick={() => handleVariantSelect(variant.id)}
+                      className={`px-4 py-2 rounded-md text-sm ${
+                        selectedVariant === variant.id
+                          ? 'bg-charcoal text-white'
+                          : 'bg-gray-100 text-charcoal'
+                      } ${variant.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={variant.stock <= 0}
+                    >
+                      {variant.name} {variant.stock <= 0 && '(Sold Out)'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {!isOutOfStock && (
               <div className="text-dark-gray mb-4">
-                <span className="font-medium">Available Stock:</span> {product.stock} units
+                <span className="font-medium">Available Stock:</span> {availableStock} units
               </div>
             )}
             
@@ -131,7 +224,7 @@ const ProductDetails = () => {
                 variant="outline" 
                 size="icon" 
                 onClick={() => handleQuantityChange(1)}
-                disabled={quantity >= product.stock || isOutOfStock}
+                disabled={quantity >= availableStock || isOutOfStock}
               >
                 <Plus className="h-4 w-4" />
               </Button>

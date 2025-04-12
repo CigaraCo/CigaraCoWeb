@@ -7,7 +7,8 @@ import {
   Package, 
   LogOut, 
   Menu, 
-  X 
+  X, 
+  Home 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -80,6 +81,18 @@ const AdminLayout = ({ children, title }: AdminLayoutProps) => {
                 );
               })}
               
+              <Link
+                to="/"
+                className="flex items-center p-3 rounded-md text-white/70 hover:text-white hover:bg-white/5"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  logout();
+                }}
+              >
+                <Home className="h-5 w-5 mr-3" />
+                Back to Website
+              </Link>
+              
               <button
                 onClick={handleLogout}
                 className="flex items-center p-3 rounded-md text-white/70 hover:text-white hover:bg-white/5 w-full text-left"
@@ -118,13 +131,24 @@ const AdminLayout = ({ children, title }: AdminLayoutProps) => {
           })}
         </nav>
         
-        <button
-          onClick={handleLogout}
-          className="flex items-center p-3 rounded-md text-white/70 hover:text-white hover:bg-white/5 mt-auto"
-        >
-          <LogOut className="h-5 w-5 mr-3" />
-          Logout
-        </button>
+        <div className="space-y-2 mt-auto">
+          <Link
+            to="/"
+            className="flex items-center p-3 rounded-md text-white/70 hover:text-white hover:bg-white/5"
+            onClick={logout}
+          >
+            <Home className="h-5 w-5 mr-3" />
+            Back to Website
+          </Link>
+          
+          <button
+            onClick={handleLogout}
+            className="flex items-center p-3 rounded-md text-white/70 hover:text-white hover:bg-white/5 w-full text-left"
+          >
+            <LogOut className="h-5 w-5 mr-3" />
+            Logout
+          </button>
+        </div>
       </aside>
       
       {/* Main content */}

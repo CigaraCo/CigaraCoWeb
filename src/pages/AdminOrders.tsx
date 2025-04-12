@@ -4,7 +4,9 @@ import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
 import { 
   Card, 
-  CardContent 
+  CardContent,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card';
 import {
   Select,
@@ -27,91 +29,123 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const AdminOrders = () => {
-  const { orders, updateOrderStatus } = useAdmin();
+  const { pendingOrders, completedOrders, updateOrderStatus } = useAdmin();
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("pending");
   
   const handleStatusChange = (orderId: string, status: string) => {
     updateOrderStatus(orderId, status as any);
   };
   
   const getOrderById = (id: string) => {
-    return orders.find(order => order.id === id);
+    const foundInPending = pendingOrders.find(order => order.id === id);
+    if (foundInPending) return foundInPending;
+    
+    return completedOrders.find(order => order.id === id);
   };
+  
+  const OrderTable = ({ orders }: { orders: ReturnType<typeof useAdmin>['orders'] }) => (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Order ID</TableHead>
+            <TableHead>Customer</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orders.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-6">
+                No orders found
+              </TableCell>
+            </TableRow>
+          ) : (
+            orders.map((order) => (
+              <TableRow key={order.id}>
+                <TableCell>{order.id}</TableCell>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{order.customer.name}</p>
+                    <p className="text-sm text-muted-foreground">{order.customer.email}</p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {new Date(order.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="font-medium">
+                  ${order.total.toFixed(2)}
+                </TableCell>
+                <TableCell>
+                  <Select
+                    defaultValue={order.status}
+                    onValueChange={(value) => handleStatusChange(order.id, value)}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <button
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    onClick={() => setSelectedOrder(order.id)}
+                  >
+                    View Details
+                  </button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
   
   return (
     <AdminLayout title="Orders">
-      <Card>
-        <CardContent className="pt-6">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6">
-                      No orders found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  orders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>{order.id}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{order.customer.name}</p>
-                          <p className="text-sm text-muted-foreground">{order.customer.email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        ${order.total.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          defaultValue={order.status}
-                          onValueChange={(value) => handleStatusChange(order.id, value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="processing">Processing</SelectItem>
-                            <SelectItem value="shipped">Shipped</SelectItem>
-                            <SelectItem value="delivered">Delivered</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <button
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          onClick={() => setSelectedOrder(order.id)}
-                        >
-                          View Details
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="pending" className="w-full mb-6" onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="pending" className="text-center">New Orders</TabsTrigger>
+          <TabsTrigger value="completed" className="text-center">Completed/Cancelled</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="pending">
+          <Card>
+            <CardHeader>
+              <CardTitle>New Orders</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OrderTable orders={pendingOrders} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="completed">
+          <Card>
+            <CardHeader>
+              <CardTitle>Completed & Cancelled Orders</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OrderTable orders={completedOrders} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
       
       {/* Order Detail Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>

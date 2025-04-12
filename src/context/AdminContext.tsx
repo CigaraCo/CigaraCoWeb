@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
+export interface ProductVariant {
+  id: string;
+  name: string;
+  image: string;
+  stock: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -10,6 +17,7 @@ export interface Product {
   category: string;
   featured: boolean;
   stock: number;
+  variants?: ProductVariant[];
 }
 
 export interface Order {
@@ -25,6 +33,7 @@ export interface Order {
     name: string;
     price: number;
     quantity: number;
+    variantId?: string;
   }[];
   total: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
@@ -43,7 +52,10 @@ interface AdminContextType {
   isAuthenticated: boolean;
   login: (username: string, password: string) => boolean;
   logout: () => void;
-  updateProductStock: (items: { id: string; quantity: number }[]) => void;
+  updateProductStock: (items: { id: string; quantity: number; variantId?: string }[]) => void;
+  pendingOrders: Order[];
+  completedOrders: Order[];
+  getActiveRevenue: () => number;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -65,7 +77,21 @@ const initialProducts: Product[] = [
     images: ["https://images.unsplash.com/photo-1610261041218-6f6d3f27124c?q=80&w=800&auto=format&fit=crop"],
     category: "cigarette-case",
     featured: true,
-    stock: 10
+    stock: 10,
+    variants: [
+      {
+        id: "1-pink",
+        name: "Pink",
+        image: "public/lovable-uploads/8d93498e-c223-4478-84c4-1509ffbd73d8.png",
+        stock: 5
+      },
+      {
+        id: "1-black",
+        name: "Black",
+        image: "https://images.unsplash.com/photo-1610261041218-6f6d3f27124c?q=80&w=800&auto=format&fit=crop",
+        stock: 5
+      }
+    ]
   },
   {
     id: "2",
@@ -132,6 +158,20 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const pendingOrders = orders.filter(order => 
+    order.status === 'pending' || order.status === 'processing'
+  );
+  
+  const completedOrders = orders.filter(order => 
+    order.status === 'shipped' || order.status === 'delivered' || order.status === 'cancelled'
+  );
+
+  const getActiveRevenue = () => {
+    return orders
+      .filter(order => order.status !== 'cancelled')
+      .reduce((sum, order) => sum + order.total, 0);
+  };
 
   useEffect(() => {
     const savedProducts = localStorage.getItem('products');
@@ -246,14 +286,30 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const updateProductStock = (items: { id: string; quantity: number }[]) => {
+  const updateProductStock = (items: { id: string; quantity: number; variantId?: string }[]) => {
     setProducts(prevProducts => {
       return prevProducts.map(product => {
         const orderItem = items.find(item => item.id === product.id);
+        
         if (orderItem) {
-          const newStock = Math.max(0, product.stock - orderItem.quantity);
-          return { ...product, stock: newStock };
+          if (orderItem.variantId && product.variants) {
+            return {
+              ...product,
+              variants: product.variants.map(variant => 
+                variant.id === orderItem.variantId
+                  ? { ...variant, stock: Math.max(0, variant.stock - orderItem.quantity) }
+                  : variant
+              ),
+              stock: Math.max(0, product.stock - orderItem.quantity)
+            };
+          }
+          
+          return { 
+            ...product, 
+            stock: Math.max(0, product.stock - orderItem.quantity)
+          };
         }
+        
         return product;
       });
     });
@@ -286,7 +342,10 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
       isAuthenticated,
       login,
       logout,
-      updateProductStock
+      updateProductStock,
+      pendingOrders,
+      completedOrders,
+      getActiveRevenue
     }}>
       {children}
     </AdminContext.Provider>

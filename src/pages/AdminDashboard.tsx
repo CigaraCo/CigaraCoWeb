@@ -7,13 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShoppingBag, Package, DollarSign } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const { products, orders } = useAdmin();
+  const { products, orders, pendingOrders, getActiveRevenue } = useAdmin();
   
   // Calculate some stats
   const totalProducts = products.length;
   const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
-  const pendingOrders = orders.filter(order => order.status === 'pending').length;
+  const totalRevenue = getActiveRevenue();
+  const newOrdersCount = pendingOrders.length;
   
   return (
     <AdminLayout title="Dashboard">
@@ -26,18 +26,18 @@ const AdminDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              From {totalOrders} orders
+              From active orders only
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+            <CardTitle className="text-sm font-medium">New Orders</CardTitle>
             <ShoppingBag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingOrders}</div>
+            <div className="text-2xl font-bold">{newOrdersCount}</div>
             <p className="text-xs text-muted-foreground">
               Orders awaiting processing
             </p>
@@ -64,11 +64,11 @@ const AdminDashboard = () => {
             <CardTitle>Recent Orders</CardTitle>
           </CardHeader>
           <CardContent>
-            {orders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No orders yet</p>
+            {pendingOrders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No pending orders</p>
             ) : (
               <div className="space-y-4">
-                {orders.slice(0, 5).map(order => (
+                {pendingOrders.slice(0, 5).map(order => (
                   <div key={order.id} className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0">
                     <div>
                       <p className="font-medium">{order.customer.name}</p>
@@ -82,8 +82,6 @@ const AdminDashboard = () => {
                         <span className={`inline-block px-2 py-1 rounded-full text-xs ${
                           order.status === 'pending' 
                             ? 'bg-yellow-100 text-yellow-800' 
-                            : order.status === 'delivered'
-                            ? 'bg-green-100 text-green-800'
                             : 'bg-blue-100 text-blue-800'
                         }`}>
                           {order.status}
