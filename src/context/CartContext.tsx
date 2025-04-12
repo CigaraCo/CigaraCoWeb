@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -8,6 +7,7 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  variantId?: string;
 }
 
 interface CartContextType {
@@ -33,7 +33,6 @@ export const useCart = () => {
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  // Load cart from localStorage on initial render
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
@@ -45,19 +44,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(items));
   }, [items]);
 
   const addItem = (item: CartItem) => {
     setItems(prevItems => {
-      const existingItem = prevItems.find(i => i.id === item.id);
+      const existingItem = prevItems.find(i => 
+        i.id === item.id && 
+        ((!i.variantId && !item.variantId) || (i.variantId === item.variantId))
+      );
       
       if (existingItem) {
-        // If item exists, increase quantity
         const updatedItems = prevItems.map(i => 
-          i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i
+          (i.id === item.id && 
+          ((!i.variantId && !item.variantId) || (i.variantId === item.variantId))) 
+            ? { ...i, quantity: i.quantity + item.quantity } 
+            : i
         );
         toast({
           title: "Item updated",
@@ -65,7 +68,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         });
         return updatedItems;
       } else {
-        // If item doesn't exist, add it
         toast({
           title: "Added to cart",
           description: `${item.name} added to your cart`,
