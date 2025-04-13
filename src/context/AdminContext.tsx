@@ -139,7 +139,7 @@ const initialOrders: Order[] = [
   }
 ];
 
-export const AdminProvider = ({ children }: { children: ReactNode }) => {
+export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(() => {
     const savedProducts = localStorage.getItem('products');
     if (savedProducts) {
@@ -151,10 +151,10 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
         }));
       } catch (error) {
         console.error('Failed to parse products from localStorage:', error);
-        return [];
+        return initialProducts;
       }
     }
-    return [];
+    return initialProducts;
   });
 
   const [orders, setOrders] = useState<Order[]>([]);

@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { useAdmin } from '@/context/AdminContext';
+import { useAdmin, ProductVariant } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +31,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Pencil, Trash, Plus, Upload, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { ProductVariant } from '@/context/AdminContext';
 
 interface ProductFormData {
   id?: string;
@@ -47,7 +45,7 @@ interface ProductFormData {
 }
 
 interface VariantFormData {
-  id?: string;
+  id: string;
   name: string;
   image: string;
   stock: number;
@@ -61,9 +59,9 @@ const AdminProducts = () => {
   const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   
-  // New state for variants
   const [variants, setVariants] = useState<VariantFormData[]>([]);
   const [currentVariant, setCurrentVariant] = useState<VariantFormData>({
+    id: '',
     name: '',
     image: '',
     stock: 10
@@ -90,6 +88,7 @@ const AdminProducts = () => {
       setEditingProduct(null);
       setVariants([]);
       setCurrentVariant({
+        id: '',
         name: '',
         image: '',
         stock: 10
@@ -212,27 +211,21 @@ const AdminProducts = () => {
       return;
     }
     
+    const variantWithId = {
+      ...currentVariant,
+      id: currentVariant.id || `variant-${Date.now()}-${variants.length}`
+    };
+    
     if (editingVariantIndex !== null) {
-      // Update existing variant
       const updatedVariants = [...variants];
-      updatedVariants[editingVariantIndex] = {
-        ...currentVariant,
-        id: variants[editingVariantIndex].id || `variant-${Date.now()}-${variants.length}`
-      };
+      updatedVariants[editingVariantIndex] = variantWithId;
       setVariants(updatedVariants);
     } else {
-      // Add new variant
-      setVariants([
-        ...variants,
-        {
-          ...currentVariant,
-          id: `variant-${Date.now()}-${variants.length}`
-        }
-      ]);
+      setVariants([...variants, variantWithId]);
     }
     
-    // Reset current variant
     setCurrentVariant({
+      id: '',
       name: '',
       image: '',
       stock: 10
@@ -294,7 +287,6 @@ const AdminProducts = () => {
       return;
     }
     
-    // Prepare the product data with variants
     const productData = {
       ...formData,
       variants: variants.length > 0 ? variants : undefined
@@ -536,7 +528,6 @@ const AdminProducts = () => {
                 </div>
               </div>
 
-              {/* Product Variants Section */}
               <div className="border-t pt-4 mt-2">
                 <div className="flex justify-between items-center mb-4">
                   <Label className="text-lg font-medium">Product Variants</Label>
@@ -685,6 +676,7 @@ const AdminProducts = () => {
                             setIsAddingVariant(false);
                             setEditingVariantIndex(null);
                             setCurrentVariant({
+                              id: '',
                               name: '',
                               image: '',
                               stock: 10
