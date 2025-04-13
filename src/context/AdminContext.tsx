@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -139,7 +138,7 @@ const initialOrders: Order[] = [
   }
 ];
 
-export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+const AdminProvider = ({ children }: { children: ReactNode }) => {
   const [products, setProducts] = useState<Product[]>(() => {
     const savedProducts = localStorage.getItem('products');
     if (savedProducts) {
@@ -352,3 +351,5 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     </AdminContext.Provider>
   );
 };
+
+export { AdminProvider };
