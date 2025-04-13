@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAdmin, ProductVariant } from '@/context/AdminContext';
+import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,14 +41,6 @@ interface ProductFormData {
   category: string;
   featured: boolean;
   stock: number;
-  variants?: ProductVariant[];
-}
-
-interface VariantFormData {
-  id: string;
-  name: string;
-  image: string;
-  stock: number;
 }
 
 const AdminProducts = () => {
@@ -59,16 +51,6 @@ const AdminProducts = () => {
   const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   
-  const [variants, setVariants] = useState<VariantFormData[]>([]);
-  const [currentVariant, setCurrentVariant] = useState<VariantFormData>({
-    id: '',
-    name: '',
-    image: '',
-    stock: 10
-  });
-  const [isAddingVariant, setIsAddingVariant] = useState(false);
-  const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null);
-  
   const initialFormData: ProductFormData = {
     name: '',
     description: '',
@@ -76,8 +58,7 @@ const AdminProducts = () => {
     images: [],
     category: 'cigarette-case',
     featured: false,
-    stock: 10,
-    variants: []
+    stock: 10
   };
   
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
@@ -86,15 +67,6 @@ const AdminProducts = () => {
     if (!isDialogOpen) {
       setFormData(initialFormData);
       setEditingProduct(null);
-      setVariants([]);
-      setCurrentVariant({
-        id: '',
-        name: '',
-        image: '',
-        stock: 10
-      });
-      setIsAddingVariant(false);
-      setEditingVariantIndex(null);
     }
   }, [isDialogOpen]);
   
@@ -103,15 +75,6 @@ const AdminProducts = () => {
     
     setFormData({
       ...formData,
-      [name]: type === 'number' ? parseFloat(value) : value,
-    });
-  };
-  
-  const handleVariantInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
-    
-    setCurrentVariant({
-      ...currentVariant,
       [name]: type === 'number' ? parseFloat(value) : value,
     });
   };
@@ -126,7 +89,6 @@ const AdminProducts = () => {
   const handleEditProduct = (product: ProductFormData) => {
     setFormData(product);
     setEditingProduct(product);
-    setVariants(product.variants || []);
     setIsDialogOpen(true);
   };
   
@@ -163,27 +125,6 @@ const AdminProducts = () => {
     
     e.target.value = '';
   };
-
-  const handleVariantImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    const file = files[0];
-    const reader = new FileReader();
-    
-    reader.onload = (event) => {
-      if (event.target && event.target.result) {
-        setCurrentVariant({
-          ...currentVariant,
-          image: event.target.result.toString(),
-        });
-      }
-    };
-    
-    reader.readAsDataURL(file);
-    
-    e.target.value = '';
-  };
   
   const handleRemoveImage = (index: number) => {
     setFormData({
@@ -192,57 +133,25 @@ const AdminProducts = () => {
     });
   };
   
-  const addVariant = () => {
-    if (!currentVariant.name) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (formData.images.length === 0) {
       toast({
         title: "Error",
-        description: "Variant name is required",
+        description: "Please add at least one product image",
         variant: "destructive",
       });
       return;
     }
     
-    if (!currentVariant.image) {
-      toast({
-        title: "Error",
-        description: "Please add an image for the variant",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const variantWithId = {
-      ...currentVariant,
-      id: currentVariant.id || `variant-${Date.now()}-${variants.length}`
-    };
-    
-    if (editingVariantIndex !== null) {
-      const updatedVariants = [...variants];
-      updatedVariants[editingVariantIndex] = variantWithId;
-      setVariants(updatedVariants);
+    if (editingProduct && editingProduct.id) {
+      updateProduct(editingProduct.id, formData);
     } else {
-      setVariants([...variants, variantWithId]);
+      addProduct(formData);
     }
     
-    setCurrentVariant({
-      id: '',
-      name: '',
-      image: '',
-      stock: 10
-    });
-    
-    setIsAddingVariant(false);
-    setEditingVariantIndex(null);
-  };
-  
-  const editVariant = (index: number) => {
-    setCurrentVariant(variants[index]);
-    setEditingVariantIndex(index);
-    setIsAddingVariant(true);
-  };
-  
-  const removeVariant = (index: number) => {
-    setVariants(variants.filter((_, i) => i !== index));
+    setIsDialogOpen(false);
   };
   
   const handleAddPlaceholderImage = () => {
@@ -258,47 +167,6 @@ const AdminProducts = () => {
       ...formData,
       images: [...formData.images, randomImage],
     });
-  };
-
-  const handleAddVariantPlaceholderImage = () => {
-    const placeholderImages = [
-      "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1579705379575-25b6259e69fe?q=80&w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1610261041218-6f6d3f27124c?q=80&w=800&auto=format&fit=crop"
-    ];
-    
-    const randomImage = placeholderImages[Math.floor(Math.random() * placeholderImages.length)];
-    
-    setCurrentVariant({
-      ...currentVariant,
-      image: randomImage,
-    });
-  };
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (formData.images.length === 0 && variants.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add at least one product image or variant",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const productData = {
-      ...formData,
-      variants: variants.length > 0 ? variants : undefined
-    };
-    
-    if (editingProduct && editingProduct.id) {
-      updateProduct(editingProduct.id, productData);
-    } else {
-      addProduct(productData);
-    }
-    
-    setIsDialogOpen(false);
   };
   
   return (
@@ -327,7 +195,6 @@ const AdminProducts = () => {
                   <TableHead>Price</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Stock</TableHead>
-                  <TableHead>Variants</TableHead>
                   <TableHead>Featured</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -335,7 +202,7 @@ const AdminProducts = () => {
               <TableBody>
                 {products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-6">
+                    <TableCell colSpan={7} className="text-center py-6">
                       No products found
                     </TableCell>
                   </TableRow>
@@ -360,9 +227,6 @@ const AdminProducts = () => {
                         <span className={product.stock <= 0 ? 'text-red-500 font-medium' : ''}>
                           {product.stock <= 0 ? 'Out of stock' : product.stock}
                         </span>
-                      </TableCell>
-                      <TableCell>
-                        {product.variants ? product.variants.length : 0}
                       </TableCell>
                       <TableCell>
                         {product.featured ? 'Yes' : 'No'}
@@ -526,175 +390,6 @@ const AdminProducts = () => {
                     Add Placeholder Image
                   </Button>
                 </div>
-              </div>
-
-              <div className="border-t pt-4 mt-2">
-                <div className="flex justify-between items-center mb-4">
-                  <Label className="text-lg font-medium">Product Variants</Label>
-                  {!isAddingVariant && (
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setIsAddingVariant(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Variant
-                    </Button>
-                  )}
-                </div>
-
-                {variants.length > 0 && (
-                  <div className="mb-4">
-                    <div className="rounded-md border overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Image</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Stock</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {variants.map((variant, index) => (
-                            <TableRow key={variant.id || index}>
-                              <TableCell>
-                                <img 
-                                  src={variant.image} 
-                                  alt={variant.name} 
-                                  className="w-12 h-12 object-cover rounded-md"
-                                />
-                              </TableCell>
-                              <TableCell>{variant.name}</TableCell>
-                              <TableCell>{variant.stock}</TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => editVariant(index)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => removeVariant(index)}
-                                  >
-                                    <Trash className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                )}
-
-                {isAddingVariant && (
-                  <div className="bg-gray-50 p-4 rounded-md mb-4">
-                    <h4 className="font-medium mb-3">
-                      {editingVariantIndex !== null ? 'Edit Variant' : 'Add Variant'}
-                    </h4>
-                    <div className="grid gap-4">
-                      <div>
-                        <Label htmlFor="variant-name">Variant Name (e.g. "Red", "Large")</Label>
-                        <Input
-                          id="variant-name"
-                          name="name"
-                          value={currentVariant.name}
-                          onChange={handleVariantInputChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="variant-stock">Stock Quantity</Label>
-                        <Input
-                          id="variant-stock"
-                          name="stock"
-                          type="number"
-                          min="0"
-                          value={currentVariant.stock}
-                          onChange={handleVariantInputChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label className="mb-2 block">Variant Image</Label>
-                        {currentVariant.image && (
-                          <div className="relative h-20 w-20 rounded-md overflow-hidden border mb-3">
-                            <img
-                              src={currentVariant.image}
-                              alt="Variant"
-                              className="h-full w-full object-cover"
-                            />
-                            <button
-                              type="button"
-                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
-                              onClick={() => setCurrentVariant({...currentVariant, image: ''})}
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
-                        
-                        <div className="flex gap-2">
-                          <Label
-                            htmlFor="variant-image-upload"
-                            className="cursor-pointer flex items-center justify-center px-4 py-2 bg-gray-100 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-200"
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Upload Image
-                          </Label>
-                          <Input
-                            id="variant-image-upload"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleVariantImageUpload}
-                            className="hidden"
-                          />
-                          
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleAddVariantPlaceholderImage}
-                          >
-                            Add Placeholder Image
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setIsAddingVariant(false);
-                            setEditingVariantIndex(null);
-                            setCurrentVariant({
-                              id: '',
-                              name: '',
-                              image: '',
-                              stock: 10
-                            });
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={addVariant}
-                        >
-                          {editingVariantIndex !== null ? 'Update Variant' : 'Add Variant'}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
             

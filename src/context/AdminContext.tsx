@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -139,8 +138,7 @@ const initialOrders: Order[] = [
   }
 ];
 
-// Define AdminProvider as a React function component
-const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AdminProvider = ({ children }: { children: ReactNode }) => {
   const [products, setProducts] = useState<Product[]>(() => {
     const savedProducts = localStorage.getItem('products');
     if (savedProducts) {
@@ -152,10 +150,10 @@ const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         }));
       } catch (error) {
         console.error('Failed to parse products from localStorage:', error);
-        return initialProducts;
+        return [];
       }
     }
-    return initialProducts;
+    return [];
   });
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -353,5 +351,3 @@ const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     </AdminContext.Provider>
   );
 };
-
-export { AdminProvider };
