@@ -139,8 +139,8 @@ const initialOrders: Order[] = [
   }
 ];
 
-// Ensure AdminProvider is properly defined as a React function component
-function AdminProvider({ children }: { children: ReactNode }) {
+// Define AdminProvider as a React function component
+const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(() => {
     const savedProducts = localStorage.getItem('products');
     if (savedProducts) {
@@ -352,6 +352,6 @@ function AdminProvider({ children }: { children: ReactNode }) {
       {children}
     </AdminContext.Provider>
   );
-}
+};
 
 export { AdminProvider };
