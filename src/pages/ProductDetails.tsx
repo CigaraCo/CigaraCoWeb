@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/context/AdminContext';
@@ -211,6 +212,7 @@ const ProductDetails = () => {
             )}
           </div>
           
+          {/* Product Info */}
           <div>
             <h1 className="text-3xl font-medium text-charcoal mb-4">{product.name}</h1>
             <p className="text-2xl text-charcoal mb-6">${product.price.toFixed(2)}</p>
@@ -248,6 +250,7 @@ const ProductDetails = () => {
               </div>
             )}
             
+            {/* Quantity Selection */}
             <div className="flex items-center mb-8">
               <Button 
                 variant="outline" 
