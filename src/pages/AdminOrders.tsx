@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
@@ -147,7 +146,6 @@ const AdminOrders = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Order Detail Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -162,13 +160,13 @@ const AdminOrders = () => {
                     Customer Information
                   </h3>
                   <p className="font-medium">
-                    {getOrderById(selectedOrder)?.customer.name}
+                    {getOrderById(selectedOrder!)?.customer.name}
                   </p>
                   <p>
-                    {getOrderById(selectedOrder)?.customer.email}
+                    {getOrderById(selectedOrder!)?.customer.email}
                   </p>
                   <p>
-                    {getOrderById(selectedOrder)?.customer.phone}
+                    {getOrderById(selectedOrder!)?.customer.phone}
                   </p>
                 </div>
                 
@@ -177,7 +175,7 @@ const AdminOrders = () => {
                     Delivery Address
                   </h3>
                   <p>
-                    {getOrderById(selectedOrder)?.customer.address}
+                    {getOrderById(selectedOrder!)?.customer.address}
                   </p>
                 </div>
               </div>
@@ -190,14 +188,18 @@ const AdminOrders = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Product</TableHead>
+                      <TableHead>Variant</TableHead>
                       <TableHead className="text-right">Quantity</TableHead>
                       <TableHead className="text-right">Price</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {getOrderById(selectedOrder)?.items.map((item) => (
+                    {getOrderById(selectedOrder!)?.items.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell>{item.name}</TableCell>
+                        <TableCell>
+                          {item.variantId ? item.name.split(' - ')[1] : 'Default'}
+                        </TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
                         <TableCell className="text-right">
                           ${(item.price * item.quantity).toFixed(2)}
@@ -205,11 +207,11 @@ const AdminOrders = () => {
                       </TableRow>
                     ))}
                     <TableRow>
-                      <TableCell colSpan={2} className="text-right font-medium">
+                      <TableCell colSpan={3} className="text-right font-medium">
                         Total
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ${getOrderById(selectedOrder)?.total.toFixed(2)}
+                        ${getOrderById(selectedOrder!)?.total.toFixed(2)}
                       </TableCell>
                     </TableRow>
                   </TableBody>

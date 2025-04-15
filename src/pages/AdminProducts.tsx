@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAdmin } from '@/context/AdminContext';
+import { useAdmin, ProductVariant } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Pencil, Trash, Plus, Upload, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import VariantForm from '@/components/Product/VariantForm';
 
 interface ProductFormData {
   id?: string;
@@ -41,6 +42,7 @@ interface ProductFormData {
   category: string;
   featured: boolean;
   stock: number;
+  variants?: ProductVariant[];
 }
 
 const AdminProducts = () => {
@@ -58,7 +60,8 @@ const AdminProducts = () => {
     images: [],
     category: 'cigarette-case',
     featured: false,
-    stock: 10
+    stock: 10,
+    variants: []
   };
   
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
@@ -168,6 +171,13 @@ const AdminProducts = () => {
       images: [...formData.images, randomImage],
     });
   };
+
+  const handleVariantChange = (variants: ProductVariant[]) => {
+    setFormData({
+      ...formData,
+      variants
+    });
+  };
   
   return (
     <AdminLayout title="Products">
@@ -259,7 +269,7 @@ const AdminProducts = () => {
       </Card>
       
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {editingProduct ? 'Edit Product' : 'Add New Product'}
@@ -391,6 +401,11 @@ const AdminProducts = () => {
                   </Button>
                 </div>
               </div>
+              
+              <VariantForm
+                variants={formData.variants || []}
+                onVariantChange={handleVariantChange}
+              />
             </div>
             
             <DialogFooter>
