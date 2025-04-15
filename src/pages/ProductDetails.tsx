@@ -31,10 +31,15 @@ const ProductDetails = () => {
   
   useEffect(() => {
     if (product) {
-      setSelectedImage(product.images[0]);
+      // Set default selected image to first product image
+      if (product.images && product.images.length > 0) {
+        setSelectedImage(product.images[0]);
+      }
       
+      // Set default selected variant if variants exist
       if (product.variants && product.variants.length > 0) {
         setSelectedVariant(product.variants[0].id);
+        // Use variant image as the selected image
         setSelectedImage(product.variants[0].image);
       }
     }
@@ -109,12 +114,17 @@ const ProductDetails = () => {
     navigate('/cart');
   };
   
+  // Determine the display images - either product images or variant images
+  const displayImages = product.variants && product.variants.length > 0
+    ? product.variants.map(v => v.image)
+    : product.images;
+  
   return (
     <MainLayout>
       <div className="container-custom py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           <ImageGallery
-            images={product.images}
+            images={displayImages}
             selectedImage={selectedImage}
             setSelectedImage={setSelectedImage}
             isOutOfStock={isOutOfStock}
@@ -132,7 +142,7 @@ const ProductDetails = () => {
               onAddToCart={handleAddToCart}
             />
             
-            {product.variants && (
+            {product.variants && product.variants.length > 0 && (
               <VariantSelector
                 variants={product.variants}
                 selectedVariant={selectedVariant}
@@ -163,4 +173,3 @@ const ProductDetails = () => {
 };
 
 export default ProductDetails;
-

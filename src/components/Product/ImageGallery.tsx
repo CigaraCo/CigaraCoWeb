@@ -21,6 +21,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   setSelectedImage,
   isOutOfStock = false,
 }) => {
+  // Ensure we have images to display
+  const displayImages = images && images.length > 0 ? images : [];
+  
   return (
     <div className="space-y-4">
       {/* Main Image Display */}
@@ -40,11 +43,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
       </div>
       
       {/* Image Carousel */}
-      {images.length > 1 && (
+      {displayImages.length > 1 && (
         <div className="relative px-12">
           <Carousel className="w-full">
             <CarouselContent className="-ml-2">
-              {images.map((image, index) => (
+              {displayImages.map((image, index) => (
                 <CarouselItem key={index} className="pl-2 basis-1/4">
                   <div
                     className={`cursor-pointer rounded-md overflow-hidden border-2 ${
@@ -71,4 +74,3 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
 };
 
 export default ImageGallery;
-
