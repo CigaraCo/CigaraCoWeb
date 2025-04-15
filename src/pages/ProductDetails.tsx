@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/context/AdminContext';
@@ -14,6 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,18 +30,21 @@ const ProductDetails = () => {
   const [showSoldOutDialog, setShowSoldOutDialog] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [displayImage, setDisplayImage] = useState('');
+  const [selectedImage, setSelectedImage] = useState('');
   
   const product = products.find(p => p.id === id);
   
   useEffect(() => {
     if (product) {
       // Initialize with the first product image
+      setSelectedImage(product.images[0]);
       setDisplayImage(product.images[0]);
       
       // If product has variants, select the first one by default
       if (product.variants && product.variants.length > 0) {
         setSelectedVariant(product.variants[0].id);
         setDisplayImage(product.variants[0].image);
+        setSelectedImage(product.variants[0].image);
       }
     }
   }, [product]);
@@ -89,6 +98,7 @@ const ProductDetails = () => {
     const variant = product.variants?.find(v => v.id === variantId);
     if (variant) {
       setDisplayImage(variant.image);
+      setSelectedImage(variant.image);
       
       // Reset quantity if necessary
       if (quantity > variant.stock) {
@@ -124,12 +134,13 @@ const ProductDetails = () => {
     <MainLayout>
       <div className="container-custom py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div>
+          <div className="space-y-4">
+            {/* Main Image Display */}
             <div className="bg-white rounded-lg overflow-hidden shadow-sm relative">
               <img
-                src={displayImage}
+                src={selectedImage || displayImage}
                 alt={product.name}
-                className={`w-full h-full object-cover object-center ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
+                className={`w-full h-[400px] object-cover object-center ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
               />
               {isOutOfStock && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -140,33 +151,62 @@ const ProductDetails = () => {
               )}
             </div>
             
-            {/* Variant images */}
+            {/* Image Carousel */}
+            {product.images.length > 1 && !selectedVariant && (
+              <div className="relative px-12">
+                <Carousel className="w-full">
+                  <CarouselContent className="-ml-2">
+                    {product.images.map((image, index) => (
+                      <CarouselItem key={index} className="pl-2 basis-1/4">
+                        <div
+                          className={`cursor-pointer rounded-md overflow-hidden border-2 ${
+                            selectedImage === image ? 'border-charcoal' : 'border-transparent'
+                          }`}
+                          onClick={() => setSelectedImage(image)}
+                        >
+                          <img
+                            src={image}
+                            alt={`${product.name} ${index + 1}`}
+                            className="w-full h-20 object-cover"
+                          />
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="left-0" />
+                  <CarouselNext className="right-0" />
+                </Carousel>
+              </div>
+            )}
+
+            {/* Variant Selection */}
             {product.variants && product.variants.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mt-4">
-                {product.variants.map((variant) => (
-                  <button
-                    key={variant.id}
-                    className={`relative overflow-hidden rounded-md border-2 ${
-                      selectedVariant === variant.id 
-                        ? 'border-charcoal' 
-                        : 'border-transparent'
-                    }`}
-                    onClick={() => handleVariantSelect(variant.id)}
-                  >
-                    <img
-                      src={variant.image}
-                      alt={variant.name}
-                      className={`w-full h-20 object-cover ${
-                        variant.stock <= 0 ? 'opacity-50 grayscale' : ''
-                      }`}
-                    />
-                    {variant.stock <= 0 && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                        <p className="text-white text-xs font-medium">Sold Out</p>
-                      </div>
-                    )}
-                  </button>
-                ))}
+              <div className="relative px-12">
+                <Carousel className="w-full">
+                  <CarouselContent className="-ml-2">
+                    {product.variants.map((variant) => (
+                      <CarouselItem key={variant.id} className="pl-2 basis-1/4">
+                        <div
+                          className={`cursor-pointer rounded-md overflow-hidden border-2 ${
+                            selectedVariant === variant.id ? 'border-charcoal' : 'border-transparent'
+                          } ${variant.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          onClick={() => variant.stock > 0 && handleVariantSelect(variant.id)}
+                        >
+                          <img
+                            src={variant.image}
+                            alt={variant.name}
+                            className="w-full h-20 object-cover"
+                          />
+                          <div className="p-1 text-center text-sm bg-gray-50">
+                            {variant.name}
+                          </div>
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="left-0" />
+                  <CarouselNext className="right-0" />
+                </Carousel>
               </div>
             )}
           </div>
@@ -179,15 +219,15 @@ const ProductDetails = () => {
               <p className="text-dark-gray">{product.description}</p>
             </div>
             
-            {/* Variant selection */}
+            {/* Variant Selection Info */}
             {product.variants && product.variants.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-sm font-medium mb-3">Variants:</h3>
+                <h3 className="text-sm font-medium mb-3">Available Colors:</h3>
                 <div className="flex flex-wrap gap-2">
                   {product.variants.map((variant) => (
                     <button
                       key={variant.id}
-                      onClick={() => handleVariantSelect(variant.id)}
+                      onClick={() => variant.stock > 0 && handleVariantSelect(variant.id)}
                       className={`px-4 py-2 rounded-md text-sm ${
                         selectedVariant === variant.id
                           ? 'bg-charcoal text-white'
