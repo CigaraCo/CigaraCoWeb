@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -138,7 +139,8 @@ const initialOrders: Order[] = [
   }
 ];
 
-export const AdminProvider = ({ children }: { children: ReactNode }) => {
+// Fixed the AdminProvider by making it explicitly a React functional component
+export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(() => {
     const savedProducts = localStorage.getItem('products');
     if (savedProducts) {
