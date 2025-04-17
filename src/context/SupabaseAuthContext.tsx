@@ -31,6 +31,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Check if Supabase client is initialized
+    if (!supabase) {
+      console.warn('Supabase client not initialized. Authentication features will not work.');
+      setIsLoading(false);
+      return;
+    }
+    
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -62,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
@@ -79,6 +86,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      
+      if (!supabase) {
+        toast({
+          title: "Authentication error",
+          description: "Supabase client is not initialized. Please check your environment variables.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
       const { session } = await authService.login(email, password);
       
       if (session?.user) {
@@ -106,6 +123,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       setIsLoading(true);
+      
+      if (!supabase) {
+        toast({
+          title: "Authentication error",
+          description: "Supabase client is not initialized. Please check your environment variables.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       await authService.logout();
       toast({
         title: "Signed out",

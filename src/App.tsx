@@ -7,6 +7,10 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { CartProvider } from "./context/CartContext";
 import { AdminProvider, useAdmin } from "./context/AdminContext";
 import { AuthProvider, useAuth } from "./context/SupabaseAuthContext";
+import { supabase } from "./lib/supabase";
+import { useState, useEffect } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ProductDetails from "./pages/ProductDetails";
@@ -38,6 +42,35 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
+// Error banner for missing Supabase configuration
+const SupabaseErrorBanner = () => {
+  const [dismissed, setDismissed] = useState(false);
+  
+  if (dismissed || supabase !== null) return null;
+  
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 p-4 bg-background">
+      <Alert variant="destructive">
+        <AlertTitle>Configuration Error</AlertTitle>
+        <AlertDescription className="flex flex-col gap-2">
+          <p>
+            Supabase connection could not be established. Please make sure you have set the following environment variables:
+            <ul className="list-disc list-inside mt-2">
+              <li>VITE_SUPABASE_URL</li>
+              <li>VITE_SUPABASE_ANON_KEY</li>
+            </ul>
+          </p>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setDismissed(true)}>
+              Dismiss
+            </Button>
+          </div>
+        </AlertDescription>
+      </Alert>
+    </div>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
@@ -45,6 +78,7 @@ const App = () => (
         <CartProvider>
           <AdminProvider>
             <TooltipProvider>
+              <SupabaseErrorBanner />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/product/:id" element={<ProductDetails />} />

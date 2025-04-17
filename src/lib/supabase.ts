@@ -1,14 +1,26 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Get Supabase credentials from environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+// Check if the required environment variables are available
+const hasSupabaseCredentials = supabaseUrl && supabaseAnonKey;
+
+// Create the Supabase client only if credentials are available
+export const supabase = hasSupabaseCredentials 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
+// Log warning if credentials are missing
+if (!hasSupabaseCredentials) {
+  console.warn(
+    'Supabase connection cannot be established. Missing environment variables: ' +
+    (!supabaseUrl ? 'VITE_SUPABASE_URL ' : '') +
+    (!supabaseAnonKey ? 'VITE_SUPABASE_ANON_KEY' : '') +
+    '. Please set these in your environment.'
+  );
 }
-
-export const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
 
 // Types based on your database schema
 export type ProductVariant = {
@@ -43,6 +55,13 @@ export type Order = {
   total: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   created_at: string;
+  customer?: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  };
+  items?: any[];
 };
 
 export type OrderItem = {
@@ -68,6 +87,11 @@ export type Customer = {
 // Database functions for Products
 export const productService = {
   async getAll(): Promise<Product[]> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      return [];
+    }
+    
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -96,6 +120,11 @@ export const productService = {
   },
   
   async getById(id: string): Promise<Product | null> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      return null;
+    }
+    
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -122,6 +151,11 @@ export const productService = {
   },
   
   async create(product: Omit<Product, 'id' | 'created_at'>): Promise<Product> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      throw new Error('Supabase client is not initialized');
+    }
+    
     const { variants, ...productData } = product;
     
     // Insert product
@@ -154,6 +188,11 @@ export const productService = {
   },
   
   async update(id: string, product: Partial<Product>): Promise<void> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      throw new Error('Supabase client is not initialized');
+    }
+    
     const { variants, ...productData } = product;
     
     // Update product
@@ -191,6 +230,11 @@ export const productService = {
   },
   
   async delete(id: string): Promise<void> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      throw new Error('Supabase client is not initialized');
+    }
+    
     // Delete variants first (foreign key constraint)
     const { error: variantError } = await supabase
       .from('product_variants')
@@ -209,6 +253,11 @@ export const productService = {
   },
   
   async updateStock(items: { id: string; quantity: number; variantId?: string }[]): Promise<void> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      throw new Error('Supabase client is not initialized');
+    }
+    
     // Process each item one by one to handle both product and variant stock
     for (const item of items) {
       // If variant is specified, update variant stock
@@ -235,16 +284,36 @@ export const productService = {
 // Database functions for Orders
 export const orderService = {
   async getAll(): Promise<Order[]> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      return [];
+    }
+    
     const { data, error } = await supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data;
+    
+    // Add customer property to match component expectations
+    return data.map(order => ({
+      ...order,
+      customer: {
+        name: order.customer_name,
+        email: order.customer_email,
+        phone: order.customer_phone,
+        address: order.customer_address
+      }
+    }));
   },
   
   async getById(id: string): Promise<{ order: Order; items: OrderItem[] } | null> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      return null;
+    }
+    
     // Get order
     const { data: order, error } = await supabase
       .from('orders')
@@ -288,6 +357,11 @@ export const orderService = {
     }[];
     total: number;
   }): Promise<Order> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      throw new Error('Supabase client is not initialized');
+    }
+    
     // Create the order
     const { data: order, error } = await supabase
       .from('orders')
@@ -334,6 +408,11 @@ export const orderService = {
   },
   
   async updateStatus(id: string, status: Order['status']): Promise<void> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      throw new Error('Supabase client is not initialized');
+    }
+    
     const { error } = await supabase
       .from('orders')
       .update({ status })
@@ -343,6 +422,11 @@ export const orderService = {
   },
   
   async delete(id: string): Promise<void> {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      throw new Error('Supabase client is not initialized');
+    }
+    
     // Delete order items first (foreign key constraint)
     const { error: itemsError } = await supabase
       .from('order_items')
@@ -364,6 +448,11 @@ export const orderService = {
 // Database functions for authentication
 export const authService = {
   async login(email: string, password: string) {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      throw new Error('Supabase client is not initialized');
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -374,17 +463,32 @@ export const authService = {
   },
   
   async logout() {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      throw new Error('Supabase client is not initialized');
+    }
+    
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   },
   
   async getCurrentUser() {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      throw new Error('Supabase client is not initialized');
+    }
+    
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
     return user;
   },
   
   async isAdminUser(userId: string) {
+    if (!supabase) {
+      console.error('Supabase client is not initialized');
+      return false;
+    }
+    
     const { data, error } = await supabase
       .from('admins')
       .select('*')

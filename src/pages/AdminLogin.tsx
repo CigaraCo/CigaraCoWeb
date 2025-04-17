@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/lib/supabase';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -37,6 +39,16 @@ const AdminLogin = () => {
       return;
     }
     
+    // Check if Supabase is initialized
+    if (supabase === null) {
+      toast({
+        title: "Error",
+        description: "Authentication service is not available. Please check your environment configuration.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Attempt login
     const success = await signIn(email, password);
     
@@ -57,6 +69,14 @@ const AdminLogin = () => {
         
         <div className="bg-white rounded-lg shadow-sm p-8">
           <h2 className="text-xl font-medium text-charcoal mb-6">Login</h2>
+          
+          {supabase === null && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>
+                Supabase configuration is missing. Please check your environment variables.
+              </AlertDescription>
+            </Alert>
+          )}
           
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
@@ -85,7 +105,7 @@ const AdminLogin = () => {
               <Button
                 type="submit"
                 className="btn-primary w-full"
-                disabled={isLoading}
+                disabled={isLoading || supabase === null}
               >
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
