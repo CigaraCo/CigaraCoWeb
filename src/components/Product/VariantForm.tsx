@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X, Upload } from 'lucide-react';
-import { ProductVariant } from '@/context/AdminContext';
+import { ProductVariant } from '@/integrations/supabase/client';
 
 interface VariantFormProps {
   variants: ProductVariant[];

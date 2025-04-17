@@ -16,6 +16,7 @@ import {
 import ImageGallery from '@/components/Product/ImageGallery';
 import VariantSelector from '@/components/Product/VariantSelector';
 import ProductInfo from '@/components/Product/ProductInfo';
+import { ProductVariant } from '@/integrations/supabase/client';
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();

@@ -71,9 +71,9 @@ const AdminDashboard = () => {
                 {pendingOrders.slice(0, 5).map(order => (
                   <div key={order.id} className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0">
                     <div>
-                      <p className="font-medium">{order.customer.name}</p>
+                      <p className="font-medium">{order.customer?.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(order.createdAt).toLocaleDateString()}
+                        {new Date(order.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">

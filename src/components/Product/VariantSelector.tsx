@@ -7,16 +7,10 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-
-interface Variant {
-  id: string;
-  name: string;
-  image: string;
-  stock: number;
-}
+import { ProductVariant } from '@/integrations/supabase/client';
 
 interface VariantSelectorProps {
-  variants: Variant[];
+  variants: ProductVariant[];
   selectedVariant: string | null;
   onVariantSelect: (variantId: string) => void;
 }

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
@@ -72,12 +73,12 @@ const AdminOrders = () => {
                 <TableCell>{order.id}</TableCell>
                 <TableCell>
                   <div>
-                    <p className="font-medium">{order.customer.name}</p>
-                    <p className="text-sm text-muted-foreground">{order.customer.email}</p>
+                    <p className="font-medium">{order.customer?.name}</p>
+                    <p className="text-sm text-muted-foreground">{order.customer?.email}</p>
                   </div>
                 </TableCell>
                 <TableCell>
-                  {new Date(order.createdAt).toLocaleDateString()}
+                  {new Date(order.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="font-medium">
                   ${order.total.toFixed(2)}
