@@ -1,17 +1,16 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAdmin } from '@/context/AdminContext';
+import { useAuth } from '@/context/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 
 const AdminLogin = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated } = useAdmin();
+  const { signIn, isAdmin, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -19,44 +18,34 @@ const AdminLogin = () => {
   const from = location.state?.from?.pathname || '/admin/dashboard';
   
   // Redirect if already authenticated
-  React.useEffect(() => {
-    if (isAuthenticated) {
+  useEffect(() => {
+    if (isAdmin) {
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAdmin, navigate, from]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
     // Simple validation
-    if (!username || !password) {
+    if (!email || !password) {
       toast({
         title: "Error",
-        description: "Please enter both username and password",
+        description: "Please enter both email and password",
         variant: "destructive",
       });
-      setIsLoading(false);
       return;
     }
     
     // Attempt login
-    const success = login(username, password);
+    const success = await signIn(email, password);
     
     if (success) {
       navigate(from, { replace: true });
-    } else {
-      toast({
-        title: "Login failed",
-        description: "Invalid username or password",
-        variant: "destructive",
-      });
     }
-    
-    setIsLoading(false);
   };
   
-  if (isAuthenticated) return null;
+  if (isAdmin) return null;
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -72,11 +61,12 @@ const AdminLogin = () => {
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
@@ -103,7 +93,7 @@ const AdminLogin = () => {
           </form>
           
           <div className="mt-6 text-center text-sm text-dark-gray">
-            <p>Use "admin" and "admin123" for demo purposes</p>
+            <p>Use your Supabase admin credentials to log in</p>
           </div>
         </div>
       </div>

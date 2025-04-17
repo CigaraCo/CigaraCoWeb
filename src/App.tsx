@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import { AdminProvider, useAdmin } from "./context/AdminContext";
+import { AuthProvider, useAuth } from "./context/SupabaseAuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ProductDetails from "./pages/ProductDetails";
@@ -21,10 +22,15 @@ const queryClient = new QueryClient();
 
 // Protected route component for admin routes
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated } = useAdmin();
+  const { isAdmin, isLoading } = useAuth();
   const location = useLocation();
   
-  if (!isAuthenticated) {
+  // Show loading or redirect
+  if (isLoading) {
+    return <div className="h-screen flex items-center justify-center">Loading...</div>;
+  }
+  
+  if (!isAdmin) {
     // Redirect to admin login page with the return path
     return <Navigate to="/admin" state={{ from: location }} replace />;
   }
@@ -35,38 +41,40 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <CartProvider>
-        <AdminProvider>
-          <TooltipProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/product/:id" element={<ProductDetails />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order-confirmation" element={<OrderConfirmation />} />
-              <Route path="/admin" element={<AdminLogin />} />
-              <Route path="/admin/dashboard" element={
-                <ProtectedRoute>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/orders" element={
-                <ProtectedRoute>
-                  <AdminOrders />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/products" element={
-                <ProtectedRoute>
-                  <AdminProducts />
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
-            <Sonner />
-          </TooltipProvider>
-        </AdminProvider>
-      </CartProvider>
+      <AuthProvider>
+        <CartProvider>
+          <AdminProvider>
+            <TooltipProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/product/:id" element={<ProductDetails />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                <Route path="/admin" element={<AdminLogin />} />
+                <Route path="/admin/dashboard" element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/orders" element={
+                  <ProtectedRoute>
+                    <AdminOrders />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/products" element={
+                  <ProtectedRoute>
+                    <AdminProducts />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster />
+              <Sonner />
+            </TooltipProvider>
+          </AdminProvider>
+        </CartProvider>
+      </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );

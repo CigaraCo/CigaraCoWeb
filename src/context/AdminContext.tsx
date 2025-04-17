@@ -1,61 +1,50 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
+import { useAuth } from './SupabaseAuthContext';
+import { 
+  supabase, 
+  productService, 
+  orderService, 
+  Product, 
+  Order,
+  ProductVariant
+} from '@/lib/supabase';
 
-export interface ProductVariant {
-  id: string;
-  name: string;
-  image: string;
-  stock: number;
-}
-
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  images: string[];
-  category: string;
-  featured: boolean;
-  stock: number;
-  variants?: ProductVariant[];
-}
-
-export interface Order {
-  id: string;
-  customer: {
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-  };
-  items: {
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-    variantId?: string;
-  }[];
-  total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  createdAt: string;
-}
+export type { Product, ProductVariant, Order };
 
 interface AdminContextType {
   products: Product[];
   orders: Order[];
-  addProduct: (productData: Omit<Product, 'id'>) => Product;
-  updateProduct: (id: string, productData: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
-  addOrder: (order: Order) => void;
-  updateOrderStatus: (id: string, status: Order['status']) => void;
-  deleteOrder: (id: string) => void;
+  addProduct: (productData: Omit<Product, 'id' | 'created_at'>) => Promise<Product>;
+  updateProduct: (id: string, productData: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
+  addOrder: (order: {
+    customer: {
+      name: string;
+      email: string;
+      phone: string;
+      address: string;
+    };
+    items: {
+      id: string;
+      name: string;
+      price: number;
+      quantity: number;
+      variantId?: string;
+      variantName?: string;
+    }[];
+    total: number;
+  }) => Promise<Order>;
+  updateOrderStatus: (id: string, status: Order['status']) => Promise<void>;
+  deleteOrder: (id: string) => Promise<void>;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
-  updateProductStock: (items: { id: string; quantity: number; variantId?: string }[]) => void;
+  logout: () => Promise<void>;
+  updateProductStock: (items: { id: string; quantity: number; variantId?: string }[]) => Promise<void>;
   pendingOrders: Order[];
   completedOrders: Order[];
   getActiveRevenue: () => number;
+  isLoading: boolean;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -68,96 +57,11 @@ export const useAdmin = () => {
   return context;
 };
 
-const initialProducts: Product[] = [
-  {
-    id: "1",
-    name: "Classic Storage Case",
-    description: "A sleek and elegant storage case for your cigarettes. Made with premium materials and designed for everyday use.",
-    price: 29.99,
-    images: ["https://images.unsplash.com/photo-1610261041218-6f6d3f27124c?q=80&w=800&auto=format&fit=crop"],
-    category: "cigarette-case",
-    featured: true,
-    stock: 10,
-    variants: [
-      {
-        id: "1-pink",
-        name: "Pink",
-        image: "public/lovable-uploads/8d93498e-c223-4478-84c4-1509ffbd73d8.png",
-        stock: 5
-      },
-      {
-        id: "1-black",
-        name: "Black",
-        image: "https://images.unsplash.com/photo-1610261041218-6f6d3f27124c?q=80&w=800&auto=format&fit=crop",
-        stock: 5
-      }
-    ]
-  },
-  {
-    id: "2",
-    name: "TEREA Premium Box",
-    description: "A sophisticated storage solution specifically designed for TEREA packs. Keeps your packs organized and protected.",
-    price: 34.99,
-    images: ["https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=800&auto=format&fit=crop"],
-    category: "terea-box",
-    featured: true,
-    stock: 10
-  },
-  {
-    id: "3",
-    name: "Minimalist Cigarette Holder",
-    description: "A minimalist approach to cigarette storage. This sleek holder protects your cigarettes while maintaining a modern aesthetic.",
-    price: 24.99,
-    images: ["https://images.unsplash.com/photo-1579705379575-25b6259e69fe?q=80&w=800&auto=format&fit=crop"],
-    category: "cigarette-case",
-    featured: false,
-    stock: 10
-  },
-];
-
-const initialOrders: Order[] = [
-  {
-    id: "order1",
-    customer: {
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "+1234567890",
-      address: "123 Main St, Amman, JO"
-    },
-    items: [
-      {
-        id: "1",
-        name: "Classic Storage Case",
-        price: 29.99,
-        quantity: 2
-      }
-    ],
-    total: 59.98,
-    status: "pending",
-    createdAt: new Date().toISOString()
-  }
-];
-
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>(() => {
-    const savedProducts = localStorage.getItem('products');
-    if (savedProducts) {
-      try {
-        const parsedProducts = JSON.parse(savedProducts);
-        return parsedProducts.map((product: Product) => ({
-          ...product,
-          stock: product.stock !== undefined ? product.stock : 10,
-        }));
-      } catch (error) {
-        console.error('Failed to parse products from localStorage:', error);
-        return [];
-      }
-    }
-    return [];
-  });
-
+  const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { isAdmin, signOut, isAuthenticated } = useAuth();
 
   const pendingOrders = orders.filter(order => 
     order.status === 'pending' || order.status === 'processing'
@@ -173,175 +77,238 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       .reduce((sum, order) => sum + order.total, 0);
   };
 
+  // Load products and orders from Supabase when admin is authenticated
   useEffect(() => {
-    const savedProducts = localStorage.getItem('products');
-    const savedOrders = localStorage.getItem('orders');
-    
-    if (savedProducts) {
-      try {
-        setProducts(JSON.parse(savedProducts));
-      } catch (error) {
-        console.error('Failed to parse products from localStorage:', error);
-        setProducts(initialProducts);
-      }
-    } else {
-      setProducts(initialProducts);
-    }
-    
-    if (savedOrders) {
-      try {
-        setOrders(JSON.parse(savedOrders));
-      } catch (error) {
-        console.error('Failed to parse orders from localStorage:', error);
-        setOrders(initialOrders);
-      }
-    } else {
-      setOrders(initialOrders);
-    }
-
-    const adminAuth = localStorage.getItem('adminAuth');
-    const adminAuthExpiry = localStorage.getItem('adminAuthExpiry');
-    
-    if (adminAuth === 'true' && adminAuthExpiry) {
-      const expiryTime = parseInt(adminAuthExpiry, 10);
-      const now = Date.now();
+    if (isAdmin) {
+      const loadData = async () => {
+        setIsLoading(true);
+        try {
+          // Load products
+          const productsData = await productService.getAll();
+          setProducts(productsData);
+          
+          // Load orders
+          const ordersData = await orderService.getAll();
+          setOrders(ordersData);
+        } catch (error) {
+          console.error('Error loading admin data:', error);
+          toast({
+            title: "Error loading data",
+            description: "Please check your connection and try again.",
+            variant: "destructive"
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
       
-      if (expiryTime > now) {
-        setIsAuthenticated(true);
-      } else {
-        localStorage.removeItem('adminAuth');
-        localStorage.removeItem('adminAuthExpiry');
-      }
+      loadData();
     }
-  }, []);
+  }, [isAdmin]);
 
-  useEffect(() => {
-    localStorage.setItem('products', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
-    localStorage.setItem('orders', JSON.stringify(orders));
-  }, [orders]);
-
-  const addProduct = (productData: Omit<Product, 'id'>) => {
-    const newProduct = {
-      ...productData,
-      id: `prod-${Date.now().toString().slice(-6)}`,
-      stock: productData.stock || 10,
-    };
-    
-    setProducts(prevProducts => [...prevProducts, newProduct]);
-    
-    toast({
-      title: "Product added",
-      description: `${newProduct.name} has been added to your inventory`,
-    });
-    
-    return newProduct;
+  const addProduct = async (productData: Omit<Product, 'id' | 'created_at'>) => {
+    try {
+      const newProduct = await productService.create(productData);
+      setProducts(prev => [newProduct, ...prev]);
+      
+      toast({
+        title: "Product added",
+        description: `${newProduct.name} has been added to your inventory`,
+      });
+      
+      return newProduct;
+    } catch (error: any) {
+      toast({
+        title: "Error adding product",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
-  const updateProduct = (id: string, productData: Partial<Product>) => {
-    setProducts(prevProducts => {
-      return prevProducts.map(product => 
+  const updateProduct = async (id: string, productData: Partial<Product>) => {
+    try {
+      await productService.update(id, productData);
+      
+      // Update local state
+      setProducts(prev => prev.map(product => 
         product.id === id 
           ? { ...product, ...productData } 
           : product
+      ));
+      
+      toast({
+        title: "Product updated",
+        description: `Product has been updated successfully`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating product",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const deleteProduct = async (id: string) => {
+    try {
+      await productService.delete(id);
+      
+      // Update local state
+      setProducts(prev => {
+        const productToDelete = prev.find(p => p.id === id);
+        if (productToDelete) {
+          toast({
+            title: "Product deleted",
+            description: `${productToDelete.name} has been deleted`,
+          });
+        }
+        return prev.filter(product => product.id !== id);
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting product",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const addOrder = async (orderData: {
+    customer: {
+      name: string;
+      email: string;
+      phone: string;
+      address: string;
+    };
+    items: {
+      id: string;
+      name: string;
+      price: number;
+      quantity: number;
+      variantId?: string;
+      variantName?: string;
+    }[];
+    total: number;
+  }) => {
+    try {
+      const newOrder = await orderService.create(orderData);
+      
+      // Update local state
+      setOrders(prev => [newOrder, ...prev]);
+      
+      toast({
+        title: "Order added",
+        description: `Order #${newOrder.id} has been added`,
+      });
+      
+      return newOrder;
+    } catch (error: any) {
+      toast({
+        title: "Error adding order",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const updateOrderStatus = async (id: string, status: Order['status']) => {
+    try {
+      await orderService.updateStatus(id, status);
+      
+      // Update local state
+      setOrders(prev => 
+        prev.map(order => 
+          order.id === id ? { ...order, status } : order
+        )
       );
-    });
-    
-    toast({
-      title: "Product updated",
-      description: `Product has been updated successfully`,
-    });
+      
+      toast({
+        title: "Order status updated",
+        description: `Order #${id} status changed to ${status}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating order status",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
-  const deleteProduct = (id: string) => {
-    setProducts(prevProducts => {
-      const productToDelete = prevProducts.find(p => p.id === id);
-      if (productToDelete) {
-        toast({
-          title: "Product deleted",
-          description: `${productToDelete.name} has been deleted`,
-        });
-      }
-      return prevProducts.filter(product => product.id !== id);
-    });
+  const deleteOrder = async (id: string) => {
+    try {
+      await orderService.delete(id);
+      
+      // Update local state
+      setOrders(prev => prev.filter(order => order.id !== id));
+      
+      toast({
+        title: "Order deleted",
+        description: `Order #${id} has been deleted`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting order",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
-  const addOrder = (order: Order) => {
-    setOrders(prevOrders => [...prevOrders, order]);
-    
-    toast({
-      title: "Order added",
-      description: `Order #${order.id} has been added`,
-    });
-  };
-
-  const updateOrderStatus = (id: string, status: Order['status']) => {
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === id ? { ...order, status } : order
-      )
-    );
-    
-    toast({
-      title: "Order status updated",
-      description: `Order #${id} status changed to ${status}`,
-    });
-  };
-
-  const deleteOrder = (id: string) => {
-    setOrders(prevOrders => {
-      return prevOrders.filter(order => order.id !== id);
-    });
-  };
-
-  const updateProductStock = (items: { id: string; quantity: number; variantId?: string }[]) => {
-    setProducts(prevProducts => {
-      return prevProducts.map(product => {
-        const orderItem = items.find(item => item.id === product.id);
-        
-        if (orderItem) {
-          if (orderItem.variantId && product.variants) {
-            return {
-              ...product,
-              variants: product.variants.map(variant => 
-                variant.id === orderItem.variantId
-                  ? { ...variant, stock: Math.max(0, variant.stock - orderItem.quantity) }
-                  : variant
-              ),
+  const updateProductStock = async (items: { id: string; quantity: number; variantId?: string }[]) => {
+    try {
+      await productService.updateStock(items);
+      
+      // Update local state
+      setProducts(prev => {
+        return prev.map(product => {
+          const orderItem = items.find(item => item.id === product.id);
+          
+          if (orderItem) {
+            if (orderItem.variantId && product.variants) {
+              return {
+                ...product,
+                variants: product.variants.map(variant => 
+                  variant.id === orderItem.variantId
+                    ? { ...variant, stock: Math.max(0, variant.stock - orderItem.quantity) }
+                    : variant
+                ),
+                stock: Math.max(0, product.stock - orderItem.quantity)
+              };
+            }
+            
+            return { 
+              ...product, 
               stock: Math.max(0, product.stock - orderItem.quantity)
             };
           }
           
-          return { 
-            ...product, 
-            stock: Math.max(0, product.stock - orderItem.quantity)
-          };
-        }
-        
-        return product;
+          return product;
+        });
       });
-    });
-  };
-
-  const login = (username: string, password: string) => {
-    if (username === "admin" && password === "admin123") {
-      setIsAuthenticated(true);
-      
-      const expiryTime = Date.now() + (4 * 60 * 60 * 1000);
-      localStorage.setItem('adminAuth', 'true');
-      localStorage.setItem('adminAuthExpiry', expiryTime.toString());
-      
-      return true;
+    } catch (error: any) {
+      toast({
+        title: "Error updating product stock",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
     }
-    return false;
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('adminAuth');
-    localStorage.removeItem('adminAuthExpiry');
+  const logout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   return (
@@ -354,13 +321,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       addOrder,
       updateOrderStatus,
       deleteOrder,
-      isAuthenticated,
-      login,
+      isAuthenticated: isAdmin,
       logout,
       updateProductStock,
       pendingOrders,
       completedOrders,
-      getActiveRevenue
+      getActiveRevenue,
+      isLoading
     }}>
       {children}
     </AdminContext.Provider>
