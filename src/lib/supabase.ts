@@ -22,14 +22,15 @@ if (!hasSupabaseCredentials) {
   );
 }
 
-// Types based on your database schema
+// Types based on your database schema, aligned with integrations/supabase/client.ts
 export type ProductVariant = {
   id: string;
   product_id: string;
   name: string;
-  image_url: string;
+  image_url?: string;
+  image: string; // Added to match the UI expectations
   stock: number;
-  created_at: string;
+  created_at?: string;
 };
 
 export type Product = {

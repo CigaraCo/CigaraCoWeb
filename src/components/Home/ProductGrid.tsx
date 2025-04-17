@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAdmin } from '@/context/AdminContext';
+import { ProductVariant } from '@/integrations/supabase/client';
 
 const ProductGrid = () => {
   const { products } = useAdmin();

@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { useAdmin, ProductVariant } from '@/context/AdminContext';
+import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { Pencil, Trash, Plus, Upload, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import VariantForm from '@/components/Product/VariantForm';
+import { ProductVariant } from '@/integrations/supabase/client';
 
 interface ProductFormData {
   id?: string;
