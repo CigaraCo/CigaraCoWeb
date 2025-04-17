@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -139,7 +138,6 @@ const initialOrders: Order[] = [
   }
 ];
 
-// Fixed the AdminProvider by making it explicitly a React functional component
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(() => {
     const savedProducts = localStorage.getItem('products');
@@ -202,8 +200,18 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     const adminAuth = localStorage.getItem('adminAuth');
-    if (adminAuth === 'true') {
-      setIsAuthenticated(true);
+    const adminAuthExpiry = localStorage.getItem('adminAuthExpiry');
+    
+    if (adminAuth === 'true' && adminAuthExpiry) {
+      const expiryTime = parseInt(adminAuthExpiry, 10);
+      const now = Date.now();
+      
+      if (expiryTime > now) {
+        setIsAuthenticated(true);
+      } else {
+        localStorage.removeItem('adminAuth');
+        localStorage.removeItem('adminAuthExpiry');
+      }
     }
   }, []);
 
@@ -320,7 +328,11 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const login = (username: string, password: string) => {
     if (username === "admin" && password === "admin123") {
       setIsAuthenticated(true);
+      
+      const expiryTime = Date.now() + (4 * 60 * 60 * 1000);
       localStorage.setItem('adminAuth', 'true');
+      localStorage.setItem('adminAuthExpiry', expiryTime.toString());
+      
       return true;
     }
     return false;
@@ -329,6 +341,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const logout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('adminAuth');
+    localStorage.removeItem('adminAuthExpiry');
   };
 
   return (

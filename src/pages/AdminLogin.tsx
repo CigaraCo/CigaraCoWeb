@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAdmin } from '@/context/AdminContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,13 +13,17 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login, isAuthenticated } = useAdmin();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get the return path from location state
+  const from = location.state?.from?.pathname || '/admin/dashboard';
   
   // Redirect if already authenticated
   React.useEffect(() => {
     if (isAuthenticated) {
-      navigate('/admin/dashboard');
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, from]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +44,7 @@ const AdminLogin = () => {
     const success = login(username, password);
     
     if (success) {
-      navigate('/admin/dashboard');
+      navigate(from, { replace: true });
     } else {
       toast({
         title: "Login failed",

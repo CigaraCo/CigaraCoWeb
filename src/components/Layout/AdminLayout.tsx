@@ -19,17 +19,9 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout = ({ children, title }: AdminLayoutProps) => {
-  const { isAuthenticated, logout } = useAdmin();
+  const { logout } = useAdmin();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  
-  // Check if user is authenticated
-  React.useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/admin');
-    }
-  }, [isAuthenticated, navigate]);
   
   const handleLogout = () => {
     logout();
@@ -41,8 +33,6 @@ const AdminLayout = ({ children, title }: AdminLayoutProps) => {
     { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
     { path: '/admin/products', label: 'Products', icon: Package },
   ];
-  
-  if (!isAuthenticated) return null;
   
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
@@ -73,7 +63,6 @@ const AdminLayout = ({ children, title }: AdminLayoutProps) => {
                         ? 'bg-white/10 text-white'
                         : 'text-white/70 hover:text-white hover:bg-white/5'
                     }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Icon className="h-5 w-5 mr-3" />
                     {item.label}
@@ -84,10 +73,6 @@ const AdminLayout = ({ children, title }: AdminLayoutProps) => {
               <Link
                 to="/"
                 className="flex items-center p-3 rounded-md text-white/70 hover:text-white hover:bg-white/5"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  logout();
-                }}
               >
                 <Home className="h-5 w-5 mr-3" />
                 Back to Website
@@ -135,7 +120,6 @@ const AdminLayout = ({ children, title }: AdminLayoutProps) => {
           <Link
             to="/"
             className="flex items-center p-3 rounded-md text-white/70 hover:text-white hover:bg-white/5"
-            onClick={logout}
           >
             <Home className="h-5 w-5 mr-3" />
             Back to Website
