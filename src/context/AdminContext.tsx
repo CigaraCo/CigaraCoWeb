@@ -6,18 +6,21 @@ import {
   supabase, 
   productService, 
   orderService, 
-  Product, 
-  Order,
-  ProductVariant
+  Product as InternalProduct, 
+  Order as InternalOrder,
+  ProductVariant as InternalProductVariant,
+  convertToClientVariant
 } from '@/lib/supabase';
+import { Product, ProductVariant, Order } from '@/integrations/supabase/client';
 
+// Re-export the client types
 export type { Product, ProductVariant, Order };
 
 interface AdminContextType {
   products: Product[];
   orders: Order[];
-  addProduct: (productData: Omit<Product, 'id' | 'created_at'>) => Promise<Product>;
-  updateProduct: (id: string, productData: Partial<Product>) => Promise<void>;
+  addProduct: (productData: Omit<InternalProduct, 'id' | 'created_at'>) => Promise<Product>;
+  updateProduct: (id: string, productData: Partial<InternalProduct>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   addOrder: (order: {
     customer: {
@@ -58,6 +61,34 @@ export const useAdmin = () => {
 };
 
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Convert internal products to client products format
+  const convertProduct = (internalProduct: InternalProduct): Product => ({
+    id: internalProduct.id,
+    name: internalProduct.name,
+    description: internalProduct.description,
+    price: internalProduct.price,
+    stock: internalProduct.stock,
+    images: internalProduct.images,
+    variants: internalProduct.variants?.map(v => convertToClientVariant(v)),
+    category: internalProduct.category,
+    featured: internalProduct.featured,
+    created_at: internalProduct.created_at
+  });
+
+  // Convert internal orders to client orders format
+  const convertOrder = (internalOrder: InternalOrder): Order => ({
+    id: internalOrder.id,
+    customer_name: internalOrder.customer_name,
+    customer_email: internalOrder.customer_email,
+    customer_phone: internalOrder.customer_phone,
+    customer_address: internalOrder.customer_address,
+    total: internalOrder.total,
+    status: internalOrder.status,
+    created_at: internalOrder.created_at,
+    customer: internalOrder.customer,
+    items: internalOrder.items
+  });
+
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,11 +116,11 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
           // Load products
           const productsData = await productService.getAll();
-          setProducts(productsData);
+          setProducts(productsData.map(convertProduct));
           
           // Load orders
           const ordersData = await orderService.getAll();
-          setOrders(ordersData);
+          setOrders(ordersData.map(convertOrder));
         } catch (error) {
           console.error('Error loading admin data:', error);
           toast({
@@ -106,17 +137,19 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [isAdmin]);
 
-  const addProduct = async (productData: Omit<Product, 'id' | 'created_at'>) => {
+  const addProduct = async (productData: Omit<InternalProduct, 'id' | 'created_at'>) => {
     try {
       const newProduct = await productService.create(productData);
-      setProducts(prev => [newProduct, ...prev]);
+      
+      const clientProduct = convertProduct(newProduct);
+      setProducts(prev => [clientProduct, ...prev]);
       
       toast({
         title: "Product added",
         description: `${newProduct.name} has been added to your inventory`,
       });
       
-      return newProduct;
+      return clientProduct;
     } catch (error: any) {
       toast({
         title: "Error adding product",
@@ -127,14 +160,14 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const updateProduct = async (id: string, productData: Partial<Product>) => {
+  const updateProduct = async (id: string, productData: Partial<InternalProduct>) => {
     try {
       await productService.update(id, productData);
       
-      // Update local state
+      // Update local state - convert internal product data to client format
       setProducts(prev => prev.map(product => 
         product.id === id 
-          ? { ...product, ...productData } 
+          ? { ...product, ...convertProduct({...product, ...productData} as InternalProduct) }
           : product
       ));
       

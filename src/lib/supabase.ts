@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { ProductVariant as ClientProductVariant } from '@/integrations/supabase/client';
 
 // Get Supabase credentials from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -22,16 +23,16 @@ if (!hasSupabaseCredentials) {
   );
 }
 
-// Types based on your database schema, aligned with integrations/supabase/client.ts
-export type ProductVariant = {
+// Types based on your database schema but compatible with client.ts
+export interface ProductVariant {
   id: string;
   product_id: string;
   name: string;
   image_url?: string;
-  image: string; // Added to match the UI expectations
+  image: string;
   stock: number;
   created_at?: string;
-};
+}
 
 export type Product = {
   id: string;
@@ -46,44 +47,19 @@ export type Product = {
   created_at: string;
 };
 
-export type Order = {
-  id: string;
-  customer_id: string | null;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  customer_address: string;
-  total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  created_at: string;
-  customer?: {
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-  };
-  items?: any[];
-};
+// Helper function to convert between variant types
+export const convertToInternalVariant = (variant: ClientProductVariant): ProductVariant => ({
+  ...variant,
+  product_id: variant.product_id || '',
+  created_at: variant.created_at
+});
 
-export type OrderItem = {
-  id: string;
-  order_id: string;
-  product_id: string;
-  product_name: string;
-  variant_id: string | null;
-  variant_name: string | null;
-  price: number;
-  quantity: number;
-};
-
-export type Customer = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  created_at: string;
-};
+export const convertToClientVariant = (variant: ProductVariant): ClientProductVariant => ({
+  id: variant.id,
+  name: variant.name,
+  stock: variant.stock,
+  image: variant.image
+});
 
 // Database functions for Products
 export const productService = {

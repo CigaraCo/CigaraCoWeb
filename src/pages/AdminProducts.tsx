@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
@@ -33,7 +32,8 @@ import { Switch } from "@/components/ui/switch";
 import { Pencil, Trash, Plus, Upload, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import VariantForm from '@/components/Product/VariantForm';
-import { ProductVariant } from '@/integrations/supabase/client';
+import { ProductVariant as ClientProductVariant } from '@/integrations/supabase/client';
+import { convertToInternalVariant, Product } from '@/lib/supabase';
 
 interface ProductFormData {
   id?: string;
@@ -44,7 +44,7 @@ interface ProductFormData {
   category: string;
   featured: boolean;
   stock: number;
-  variants?: ProductVariant[];
+  variants?: ClientProductVariant[];
 }
 
 const AdminProducts = () => {
@@ -151,9 +151,19 @@ const AdminProducts = () => {
     }
     
     if (editingProduct && editingProduct.id) {
-      updateProduct(editingProduct.id, formData);
+      const productData: Partial<Product> = {
+        ...formData,
+        variants: formData.variants?.map(v => convertToInternalVariant(v))
+      };
+      
+      updateProduct(editingProduct.id, productData);
     } else {
-      addProduct(formData);
+      const productData: Omit<Product, 'id' | 'created_at'> = {
+        ...formData as any,
+        variants: formData.variants?.map(v => convertToInternalVariant(v))
+      };
+      
+      addProduct(productData);
     }
     
     setIsDialogOpen(false);

@@ -27,7 +27,7 @@ const ProductGrid = () => {
               (product.variants && product.variants.length > 0 && allVariantsOutOfStock);
             
             // Get the first image - either from the first variant or the product
-            const displayImage = product.variants && product.variants.length > 0
+            const displayImage = product.variants && product.variants.length > 0 && product.variants[0].image
               ? product.variants[0].image
               : product.images[0];
             
