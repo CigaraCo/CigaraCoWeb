@@ -17,9 +17,11 @@ const VariantForm: React.FC<VariantFormProps> = ({ variants, onVariantChange }) 
       ...variants,
       {
         id: `variant-${Date.now()}`,
+        product_id: '', // Will be set by parent component
         name: '',
         image: '',
-        stock: 0
+        stock: 0,
+        price_diff: 0
       }
     ]);
   };
@@ -79,7 +81,7 @@ const VariantForm: React.FC<VariantFormProps> = ({ variants, onVariantChange }) 
             <Label htmlFor={`variant-name-${index}`}>Variant Name</Label>
             <Input
               id={`variant-name-${index}`}
-              value={variant.name}
+              value={variant.name || ''}
               onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
               placeholder="e.g., Red, Large, etc."
             />
@@ -91,7 +93,7 @@ const VariantForm: React.FC<VariantFormProps> = ({ variants, onVariantChange }) 
               id={`variant-stock-${index}`}
               type="number"
               min="0"
-              value={variant.stock}
+              value={variant.stock || 0}
               onChange={(e) => handleVariantChange(index, 'stock', parseInt(e.target.value))}
             />
           </div>
@@ -103,7 +105,7 @@ const VariantForm: React.FC<VariantFormProps> = ({ variants, onVariantChange }) 
                 <div className="relative h-20 w-20 rounded-md overflow-hidden border">
                   <img
                     src={variant.image}
-                    alt={variant.name}
+                    alt={variant.name || ''}
                     className="h-full w-full object-cover"
                   />
                 </div>

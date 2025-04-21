@@ -199,11 +199,11 @@ const AdminOrders = () => {
                       <TableRow key={item.id}>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>
-                          {item.variantId ? item.name.split(' - ')[1] : 'Default'}
+                          {item.variant_id ? item.name.split(' - ')[1] : 'Default'}
                         </TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
                         <TableCell className="text-right">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          ${(item.price * (item.quantity || 0)).toFixed(2)}
                         </TableCell>
                       </TableRow>
                     ))}

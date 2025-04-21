@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from './SupabaseAuthContext';
@@ -7,11 +6,10 @@ import {
   productService, 
   orderService, 
   Product as InternalProduct, 
-  Order as InternalOrder,
-  ProductVariant as InternalProductVariant,
-  convertToClientVariant
+  convertToClientProduct,
+  convertFromClientVariant
 } from '@/lib/supabase';
-import { Product, ProductVariant, Order } from '@/integrations/supabase/client';
+import { Product, ProductVariant, Order, OrderItem } from '@/integrations/supabase/client';
 
 // Re-export the client types
 export type { Product, ProductVariant, Order };
@@ -61,34 +59,7 @@ export const useAdmin = () => {
 };
 
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Convert internal products to client products format
-  const convertProduct = (internalProduct: InternalProduct): Product => ({
-    id: internalProduct.id,
-    name: internalProduct.name,
-    description: internalProduct.description,
-    price: internalProduct.price,
-    stock: internalProduct.stock,
-    images: internalProduct.images,
-    variants: internalProduct.variants?.map(v => convertToClientVariant(v)),
-    category: internalProduct.category,
-    featured: internalProduct.featured,
-    created_at: internalProduct.created_at
-  });
-
-  // Convert internal orders to client orders format
-  const convertOrder = (internalOrder: InternalOrder): Order => ({
-    id: internalOrder.id,
-    customer_name: internalOrder.customer_name,
-    customer_email: internalOrder.customer_email,
-    customer_phone: internalOrder.customer_phone,
-    customer_address: internalOrder.customer_address,
-    total: internalOrder.total,
-    status: internalOrder.status,
-    created_at: internalOrder.created_at,
-    customer: internalOrder.customer,
-    items: internalOrder.items
-  });
-
+  // Internal products will be converted to client products format
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -105,7 +76,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const getActiveRevenue = () => {
     return orders
       .filter(order => order.status !== 'cancelled')
-      .reduce((sum, order) => sum + order.total, 0);
+      .reduce((sum, order) => sum + (order.total || 0), 0);
   };
 
   // Load products and orders from Supabase when admin is authenticated
@@ -114,13 +85,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const loadData = async () => {
         setIsLoading(true);
         try {
-          // Load products
+          // Load products - convert from internal to client format
           const productsData = await productService.getAll();
-          setProducts(productsData.map(convertProduct));
+          setProducts(productsData.map(p => convertToClientProduct(p)));
           
           // Load orders
           const ordersData = await orderService.getAll();
-          setOrders(ordersData.map(convertOrder));
+          setOrders(ordersData);
         } catch (error) {
           console.error('Error loading admin data:', error);
           toast({
@@ -141,7 +112,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try {
       const newProduct = await productService.create(productData);
       
-      const clientProduct = convertProduct(newProduct);
+      const clientProduct = convertToClientProduct(newProduct);
       setProducts(prev => [clientProduct, ...prev]);
       
       toast({
@@ -165,11 +136,23 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       await productService.update(id, productData);
       
       // Update local state - convert internal product data to client format
-      setProducts(prev => prev.map(product => 
-        product.id === id 
-          ? { ...product, ...convertProduct({...product, ...productData} as InternalProduct) }
-          : product
-      ));
+      setProducts(prev => prev.map(product => {
+        if (product.id === id) {
+          // Create a merged product with the updated data
+          const updatedInternalProduct = {
+            ...product,
+            ...productData,
+            id,
+            // Ensure these required fields are present
+            images: product.images || [],
+            category: product.category || '',
+            featured: typeof product.featured === 'boolean' ? product.featured : false
+          } as InternalProduct;
+          
+          return convertToClientProduct(updatedInternalProduct);
+        }
+        return product;
+      }));
       
       toast({
         title: "Product updated",

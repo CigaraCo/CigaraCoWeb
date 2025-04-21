@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
@@ -33,7 +34,7 @@ import { Pencil, Trash, Plus, Upload, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import VariantForm from '@/components/Product/VariantForm';
 import { ProductVariant as ClientProductVariant } from '@/integrations/supabase/client';
-import { convertToInternalVariant, Product } from '@/lib/supabase';
+import { convertFromClientVariant, Product } from '@/lib/supabase';
 
 interface ProductFormData {
   id?: string;
@@ -151,16 +152,24 @@ const AdminProducts = () => {
     }
     
     if (editingProduct && editingProduct.id) {
+      // Convert client variants to internal variants with proper product_id
+      const productId = editingProduct.id;
       const productData: Partial<Product> = {
         name: formData.name,
         description: formData.description,
         price: formData.price,
         stock: formData.stock,
-        variants: formData.variants?.map(v => ({
-          ...v,
-          product_id: editingProduct.id
-        }))
+        images: formData.images,
+        category: formData.category,
+        featured: formData.featured
       };
+      
+      // Only include variants if they exist
+      if (formData.variants && formData.variants.length > 0) {
+        productData.variants = formData.variants.map(v => 
+          convertFromClientVariant(v, productId)
+        );
+      }
       
       updateProduct(editingProduct.id, productData);
     } else {
@@ -169,11 +178,17 @@ const AdminProducts = () => {
         description: formData.description,
         price: formData.price,
         stock: formData.stock,
-        variants: formData.variants?.map(v => ({
-          ...v,
-          product_id: ''  // Will be set by the backend
-        }))
+        images: formData.images,
+        category: formData.category,
+        featured: formData.featured
       };
+      
+      // Only include variants if they exist
+      if (formData.variants && formData.variants.length > 0) {
+        productData.variants = formData.variants.map(v => 
+          convertFromClientVariant(v, '')
+        );
+      }
       
       addProduct(productData);
     }
@@ -196,7 +211,7 @@ const AdminProducts = () => {
     });
   };
 
-  const handleVariantChange = (variants: ProductVariant[]) => {
+  const handleVariantChange = (variants: ClientProductVariant[]) => {
     setFormData({
       ...formData,
       variants

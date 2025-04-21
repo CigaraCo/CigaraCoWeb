@@ -1,5 +1,11 @@
+
 import { createClient } from '@supabase/supabase-js';
-import { ProductVariant as ClientProductVariant, Product, Order, OrderItem } from '@/integrations/supabase/client';
+import { 
+  ProductVariant as ClientProductVariant, 
+  Product as ClientProduct, 
+  Order as ClientOrder, 
+  OrderItem as ClientOrderItem 
+} from '@/integrations/supabase/client';
 
 // Get Supabase credentials from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -54,8 +60,44 @@ export const convertToClientVariant = (variant: ProductVariant): ClientProductVa
   product_id: variant.product_id,
   name: variant.name,
   stock: variant.stock,
-  price_diff: variant.price_diff,
-  image: variant.image_url // Map the image_url to image for UI
+  price_diff: variant.price_diff || null,
+  image: variant.image_url || variant.image // Map the image_url or image to image for UI
+});
+
+// Helper function to convert from client variant to internal variant
+export const convertFromClientVariant = (variant: ClientProductVariant, productId: string = ''): ProductVariant => ({
+  id: variant.id,
+  product_id: variant.product_id || productId,
+  name: variant.name || '',
+  stock: variant.stock || 0,
+  price_diff: variant.price_diff || 0,
+  image: variant.image || '',
+  image_url: variant.image
+});
+
+// Helper function to convert internal product to client product
+export const convertToClientProduct = (product: Product): ClientProduct => ({
+  id: product.id,
+  name: product.name,
+  description: product.description,
+  price: product.price,
+  stock: product.stock,
+  created_at: product.created_at,
+  images: product.images,
+  variants: product.variants?.map(convertToClientVariant),
+  category: product.category,
+  featured: product.featured
+});
+
+// Helper function to convert client order item to internal order item
+export const convertFromClientOrderItem = (item: ClientOrderItem): any => ({
+  id: item.id,
+  order_id: item.order_id,
+  product_id: item.product_id,
+  variant_id: item.variant_id,
+  name: item.name,
+  quantity: item.quantity,
+  price: item.price
 });
 
 // Database functions for Products
