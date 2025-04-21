@@ -98,7 +98,18 @@ const VariantForm: React.FC<VariantFormProps> = ({ variants, onVariantChange }) 
             />
           </div>
 
-          <div className="col-span-2">
+          <div>
+            <Label htmlFor={`variant-price-diff-${index}`}>Price Difference</Label>
+            <Input
+              id={`variant-price-diff-${index}`}
+              type="number"
+              value={variant.price_diff || 0}
+              onChange={(e) => handleVariantChange(index, 'price_diff', parseFloat(e.target.value))}
+              placeholder="Additional price for this variant"
+            />
+          </div>
+
+          <div className="col-span-1">
             <Label>Variant Image</Label>
             <div className="flex items-center gap-4">
               {variant.image && (

@@ -2,9 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { 
   ProductVariant as ClientProductVariant, 
-  Product as ClientProduct, 
-  Order as ClientOrder, 
-  OrderItem as ClientOrderItem 
+  Product as ClientProduct,
+  Order as ClientOrder,
+  OrderItem as ClientOrderItem
 } from '@/integrations/supabase/client';
 
 // Get Supabase credentials from environment variables
@@ -33,26 +33,55 @@ if (!hasSupabaseCredentials) {
 export interface ProductVariant {
   id: string;
   product_id: string;
-  name: string;
+  name: string | null;
   image_url?: string;
-  image: string;
-  stock: number;
-  price_diff?: number;
+  image?: string;
+  stock: number | null;
+  price_diff?: number | null;
   created_at?: string;
 }
 
 export type Product = {
   id: string;
-  name: string;
-  description: string;
-  price: number;
+  name: string | null;
+  description: string | null;
+  price: number | null;
   images: string[];
   category: string;
   featured: boolean;
-  stock: number;
+  stock: number | null;
   variants?: ProductVariant[];
-  created_at: string;
+  created_at: string | null;
 };
+
+export interface OrderItem {
+  id: string;
+  order_id: string | null;
+  product_id: string | null;
+  variant_id: string | null;
+  name: string | null;
+  quantity: number | null;
+  price: number | null;
+}
+
+export interface Order {
+  id: string;
+  user_id: string;
+  status: string | null;
+  total: number | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
+  customer_address: string | null;
+  created_at: string | null;
+  customer?: {
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+  };
+  items?: OrderItem[];
+}
 
 // Helper function to convert between variant types
 export const convertToClientVariant = (variant: ProductVariant): ClientProductVariant => ({
@@ -61,18 +90,17 @@ export const convertToClientVariant = (variant: ProductVariant): ClientProductVa
   name: variant.name,
   stock: variant.stock,
   price_diff: variant.price_diff || null,
-  image: variant.image_url || variant.image // Map the image_url or image to image for UI
+  image: variant.image_url || variant.image || ''
 });
 
 // Helper function to convert from client variant to internal variant
 export const convertFromClientVariant = (variant: ClientProductVariant, productId: string = ''): ProductVariant => ({
   id: variant.id,
   product_id: variant.product_id || productId,
-  name: variant.name || '',
-  stock: variant.stock || 0,
-  price_diff: variant.price_diff || 0,
-  image: variant.image || '',
-  image_url: variant.image
+  name: variant.name,
+  stock: variant.stock,
+  price_diff: variant.price_diff,
+  image: variant.image
 });
 
 // Helper function to convert internal product to client product
@@ -89,8 +117,22 @@ export const convertToClientProduct = (product: Product): ClientProduct => ({
   featured: product.featured
 });
 
+// Helper function to convert client product to internal product
+export const convertFromClientProduct = (product: ClientProduct): Product => ({
+  id: product.id,
+  name: product.name,
+  description: product.description,
+  price: product.price,
+  stock: product.stock,
+  created_at: product.created_at,
+  images: product.images || [],
+  variants: product.variants?.map(v => convertFromClientVariant(v, product.id)),
+  category: product.category || '',
+  featured: product.featured || false
+});
+
 // Helper function to convert client order item to internal order item
-export const convertFromClientOrderItem = (item: ClientOrderItem): any => ({
+export const convertFromClientOrderItem = (item: ClientOrderItem): OrderItem => ({
   id: item.id,
   order_id: item.order_id,
   product_id: item.product_id,

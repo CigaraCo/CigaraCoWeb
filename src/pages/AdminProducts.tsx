@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
@@ -33,8 +32,8 @@ import { Switch } from "@/components/ui/switch";
 import { Pencil, Trash, Plus, Upload, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import VariantForm from '@/components/Product/VariantForm';
-import { ProductVariant as ClientProductVariant } from '@/integrations/supabase/client';
-import { convertFromClientVariant, Product } from '@/lib/supabase';
+import { ProductVariant as ClientProductVariant, Product } from '@/integrations/supabase/client';
+import { convertFromClientVariant, Product as InternalProduct } from '@/lib/supabase';
 
 interface ProductFormData {
   id?: string;
@@ -92,9 +91,21 @@ const AdminProducts = () => {
     });
   };
   
-  const handleEditProduct = (product: ProductFormData) => {
-    setFormData(product);
-    setEditingProduct(product);
+  const handleEditProduct = (product: Product) => {
+    const formProduct: ProductFormData = {
+      id: product.id,
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price || 0,
+      images: product.images || [],
+      category: product.category || 'cigarette-case',
+      featured: product.featured || false,
+      stock: product.stock || 0,
+      variants: product.variants || []
+    };
+    
+    setFormData(formProduct);
+    setEditingProduct(formProduct);
     setIsDialogOpen(true);
   };
   
@@ -154,7 +165,7 @@ const AdminProducts = () => {
     if (editingProduct && editingProduct.id) {
       // Convert client variants to internal variants with proper product_id
       const productId = editingProduct.id;
-      const productData: Partial<Product> = {
+      const productData: Partial<InternalProduct> = {
         name: formData.name,
         description: formData.description,
         price: formData.price,
@@ -173,7 +184,7 @@ const AdminProducts = () => {
       
       updateProduct(editingProduct.id, productData);
     } else {
-      const productData: Omit<Product, 'id' | 'created_at'> = {
+      const productData: Omit<InternalProduct, 'id' | 'created_at'> = {
         name: formData.name,
         description: formData.description,
         price: formData.price,
