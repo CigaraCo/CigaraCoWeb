@@ -152,15 +152,27 @@ const AdminProducts = () => {
     
     if (editingProduct && editingProduct.id) {
       const productData: Partial<Product> = {
-        ...formData,
-        variants: formData.variants?.map(v => convertToInternalVariant(v))
+        name: formData.name,
+        description: formData.description,
+        price: formData.price,
+        stock: formData.stock,
+        variants: formData.variants?.map(v => ({
+          ...v,
+          product_id: editingProduct.id
+        }))
       };
       
       updateProduct(editingProduct.id, productData);
     } else {
       const productData: Omit<Product, 'id' | 'created_at'> = {
-        ...formData as any,
-        variants: formData.variants?.map(v => convertToInternalVariant(v))
+        name: formData.name,
+        description: formData.description,
+        price: formData.price,
+        stock: formData.stock,
+        variants: formData.variants?.map(v => ({
+          ...v,
+          product_id: ''  // Will be set by the backend
+        }))
       };
       
       addProduct(productData);

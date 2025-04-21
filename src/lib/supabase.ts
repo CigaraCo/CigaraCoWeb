@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { ProductVariant as ClientProductVariant } from '@/integrations/supabase/client';
+import { ProductVariant as ClientProductVariant, Product, Order, OrderItem } from '@/integrations/supabase/client';
 
 // Get Supabase credentials from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -31,6 +31,7 @@ export interface ProductVariant {
   image_url?: string;
   image: string;
   stock: number;
+  price_diff?: number;
   created_at?: string;
 }
 
@@ -48,17 +49,13 @@ export type Product = {
 };
 
 // Helper function to convert between variant types
-export const convertToInternalVariant = (variant: ClientProductVariant): ProductVariant => ({
-  ...variant,
-  product_id: variant.product_id || '',
-  created_at: variant.created_at
-});
-
 export const convertToClientVariant = (variant: ProductVariant): ClientProductVariant => ({
   id: variant.id,
+  product_id: variant.product_id,
   name: variant.name,
   stock: variant.stock,
-  image: variant.image
+  price_diff: variant.price_diff,
+  image: variant.image_url // Map the image_url to image for UI
 });
 
 // Database functions for Products

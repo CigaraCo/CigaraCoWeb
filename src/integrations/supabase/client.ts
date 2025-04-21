@@ -14,40 +14,51 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Export fixed types that match what our UI is expecting
 export type ProductVariant = {
   id: string;
-  name: string;
-  stock: number;
-  image: string;  // Add this to match UI expectations
-  image_url?: string; // Original field from DB
+  product_id: string;
+  name: string | null;
+  stock: number | null;
+  price_diff: number | null;
+  image?: string; // UI requirement but not in DB
 };
 
 export type Product = {
   id: string;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  images: string[];
+  name: string | null;
+  description: string | null;
+  price: number | null;
+  stock: number | null;
+  created_at: string | null;
+  images?: string[]; // UI requirement but not in DB
   variants?: ProductVariant[];
-  category?: string;
-  featured?: boolean;
-  created_at?: string;
+  category?: string; // UI requirement but not in DB
+  featured?: boolean; // UI requirement but not in DB
+};
+
+export type OrderItem = {
+  id: string;
+  order_id: string | null;
+  product_id: string | null;
+  variant_id: string | null;
+  name: string | null;
+  quantity: number | null;
+  price: number | null;
 };
 
 export type Order = {
   id: string;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  customer_address: string;
-  total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  created_at: string;
-  createdAt?: string; // Add this for backward compatibility
+  user_id: string;
+  status: string | null;
+  total: number | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
+  customer_address: string | null;
+  created_at: string | null;
   customer?: {
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
   };
-  items?: any[];
+  items?: OrderItem[];
 };
