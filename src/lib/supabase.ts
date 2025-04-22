@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { 
   ProductVariant as ClientProductVariant, 
@@ -548,16 +547,31 @@ export const authService = {
     }
     
     try {
+      console.log(`Checking admin status for user ID: ${userId}`);
+      
       const { data, error } = await supabase
         .from('admins')
         .select('*')
-        .eq('user_id', userId)
-        .single();
+        .eq('user_id', userId);
       
-      if (error && error.code !== 'PGRST116') throw error;
-      return !!data;
+      if (error) {
+        console.error('Error checking admin status:', error);
+        return false;
+      }
+      
+      console.log('Admin check result:', data);
+      
+      // If data is empty array, user is not an admin
+      if (!data || data.length === 0) {
+        console.log('User is not an admin - no matching records found');
+        return false;
+      }
+      
+      // Found matching admin record
+      console.log('User is an admin');
+      return true;
     } catch (e) {
-      console.error('Error checking admin status:', e);
+      console.error('Exception when checking admin status:', e);
       return false;
     }
   }
