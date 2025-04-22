@@ -7,9 +7,9 @@ import {
   OrderItem as ClientOrderItem
 } from '@/integrations/supabase/client';
 
-// Get Supabase credentials from environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Get Supabase credentials - first try from environment variables, then from the integrations file
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gberhjjwltvpdttflgfi.supabase.co' || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdiZXJoamp3bHR2cGR0dGZsZ2ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4OTIxMDEsImV4cCI6MjA2MDQ2ODEwMX0.BrCNewuCvEH2y4CV7I-kZtNI1r7da2f1Y1AgrmEtxMw' || '';
 
 // Check if the required environment variables are available
 const hasSupabaseCredentials = supabaseUrl && supabaseAnonKey;
@@ -547,13 +547,18 @@ export const authService = {
       return false;
     }
     
-    const { data, error } = await supabase
-      .from('admins')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') throw error;
-    return !!data;
+    try {
+      const { data, error } = await supabase
+        .from('admins')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      return !!data;
+    } catch (e) {
+      console.error('Error checking admin status:', e);
+      return false;
+    }
   }
 };

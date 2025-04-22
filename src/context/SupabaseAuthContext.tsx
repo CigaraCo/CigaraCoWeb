@@ -96,18 +96,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      const { session } = await authService.login(email, password);
-      
-      if (session?.user) {
-        await checkAdminStatus(session.user.id);
+      // Modified to handle potential errors from the auth service
+      try {
+        const { session } = await authService.login(email, password);
+        
+        if (session?.user) {
+          await checkAdminStatus(session.user.id);
+          toast({
+            title: "Signed in successfully",
+            description: "Welcome back!",
+          });
+          return true;
+        }
+        
         toast({
-          title: "Signed in successfully",
-          description: "Welcome back!",
+          title: "Authentication failed",
+          description: "Invalid credentials or user not found.",
+          variant: "destructive",
         });
-        return true;
+        return false;
+      } catch (authError: any) {
+        console.error("Auth service error:", authError);
+        toast({
+          title: "Authentication failed",
+          description: authError.message || "Failed to sign in. Please check your credentials.",
+          variant: "destructive",
+        });
+        return false;
       }
-      
-      return false;
     } catch (error: any) {
       toast({
         title: "Authentication failed",
