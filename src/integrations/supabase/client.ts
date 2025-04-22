@@ -30,8 +30,8 @@ export type Product = {
   created_at: string | null;
   images?: string[]; // UI requirement but not in DB
   variants?: ProductVariant[];
-  category?: string; // UI requirement but not in DB
-  featured?: boolean; // UI requirement but not in DB
+  category: string | null; // Now properly defined as in the DB
+  featured: boolean | null; // Now properly defined as in the DB
 };
 
 export type OrderItem = {
