@@ -101,7 +101,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { session } = await authService.login(email, password);
         
         if (session?.user) {
-          await checkAdminStatus(session.user.id);
+          // Ensure admin status is checked immediately after login
+          const isUserAdmin = await authService.isAdminUser(session.user.id);
+          setIsAdmin(isUserAdmin);
+          
+          if (!isUserAdmin) {
+            toast({
+              title: "Access denied",
+              description: "Your account does not have admin privileges.",
+              variant: "destructive",
+            });
+            await authService.logout();
+            return false;
+          }
+          
           toast({
             title: "Signed in successfully",
             description: "Welcome back!",

@@ -43,7 +43,10 @@ const AdminLogin = () => {
     const success = await signIn(email, password);
     
     if (success) {
-      navigate(from, { replace: true });
+      // Adding a delay to ensure the isAdmin state is updated before navigation
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
     }
   };
   
