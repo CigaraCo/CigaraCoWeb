@@ -219,6 +219,13 @@ export const productService = {
       throw new Error('Supabase client is not initialized');
     }
     
+    // Check if user is authenticated
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      console.error('User is not authenticated');
+      throw new Error('You must be logged in to add products');
+    }
+    
     const { variants, ...productData } = product;
     
     // Insert product - explicitly include category and featured
@@ -232,6 +239,7 @@ export const productService = {
     };
     
     console.log('Creating product with data:', productToInsert);
+    console.log('User session:', sessionData.session);
     
     const { data, error } = await supabase
       .from('products')
