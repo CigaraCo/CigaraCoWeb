@@ -9,12 +9,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-  }
-});
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 // Export fixed types that match what our UI is expecting
 export type ProductVariant = {
@@ -35,8 +30,8 @@ export type Product = {
   created_at: string | null;
   images?: string[]; // UI requirement but not in DB
   variants?: ProductVariant[];
-  category: string | null; // Now properly defined as in the DB
-  featured: boolean | null; // Now properly defined as in the DB
+  category?: string; // UI requirement but not in DB
+  featured?: boolean; // UI requirement but not in DB
 };
 
 export type OrderItem = {

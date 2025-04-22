@@ -146,30 +146,24 @@ export type Database = {
       }
       products: {
         Row: {
-          category: string | null
           created_at: string | null
           description: string | null
-          featured: boolean | null
           id: string
           name: string | null
           price: number | null
           stock: number | null
         }
         Insert: {
-          category?: string | null
           created_at?: string | null
           description?: string | null
-          featured?: boolean | null
           id?: string
           name?: string | null
           price?: number | null
           stock?: number | null
         }
         Update: {
-          category?: string | null
           created_at?: string | null
           description?: string | null
-          featured?: boolean | null
           id?: string
           name?: string | null
           price?: number | null

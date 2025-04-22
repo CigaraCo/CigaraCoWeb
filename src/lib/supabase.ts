@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { 
   ProductVariant as ClientProductVariant, 
@@ -168,10 +169,7 @@ export const productService = {
         
         return {
           ...product,
-          variants: variants || [],
-          // Ensure we have default values for category and featured if they're null
-          category: product.category || 'cigarette-case',
-          featured: product.featured || false
+          variants: variants || []
         };
       })
     );
@@ -206,10 +204,7 @@ export const productService = {
     
     return {
       ...data,
-      variants: variants || [],
-      // Ensure we have default values for category and featured if they're null
-      category: data.category || 'cigarette-case',
-      featured: data.featured || false
+      variants: variants || []
     };
   },
   
@@ -219,38 +214,16 @@ export const productService = {
       throw new Error('Supabase client is not initialized');
     }
     
-    // Check if user is authenticated
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      console.error('User is not authenticated');
-      throw new Error('You must be logged in to add products');
-    }
-    
     const { variants, ...productData } = product;
     
-    // Insert product - explicitly include category and featured
-    const productToInsert = {
-      name: productData.name,
-      description: productData.description,
-      price: productData.price,
-      stock: productData.stock,
-      category: productData.category,
-      featured: productData.featured
-    };
-    
-    console.log('Creating product with data:', productToInsert);
-    console.log('User session:', sessionData.session);
-    
+    // Insert product
     const { data, error } = await supabase
       .from('products')
-      .insert([productToInsert])
+      .insert([productData])
       .select()
       .single();
     
-    if (error) {
-      console.error('Error creating product:', error);
-      throw error;
-    }
+    if (error) throw error;
     
     // Insert variants if any
     if (variants && variants.length > 0) {
@@ -263,19 +236,12 @@ export const productService = {
         .from('product_variants')
         .insert(variantsWithProductId);
       
-      if (variantError) {
-        console.error('Error creating product variants:', variantError);
-        throw variantError;
-      }
+      if (variantError) throw variantError;
     }
     
-    // Return the complete product with images and other fields
     return {
       ...data,
-      variants: variants || [],
-      images: productData.images || [],
-      category: data.category || 'cigarette-case',
-      featured: data.featured || false
+      variants: variants || []
     };
   },
   
@@ -582,31 +548,16 @@ export const authService = {
     }
     
     try {
-      console.log(`Checking admin status for user ID: ${userId}`);
-      
       const { data, error } = await supabase
         .from('admins')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .single();
       
-      if (error) {
-        console.error('Error checking admin status:', error);
-        return false;
-      }
-      
-      console.log('Admin check result:', data);
-      
-      // If data is empty array, user is not an admin
-      if (!data || data.length === 0) {
-        console.log('User is not an admin - no matching records found');
-        return false;
-      }
-      
-      // Found matching admin record
-      console.log('User is an admin');
-      return true;
+      if (error && error.code !== 'PGRST116') throw error;
+      return !!data;
     } catch (e) {
-      console.error('Exception when checking admin status:', e);
+      console.error('Error checking admin status:', e);
       return false;
     }
   }
