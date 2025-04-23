@@ -2,7 +2,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAdmin } from '@/context/AdminContext';
-import { ProductVariant } from '@/integrations/supabase/client';
 
 const ProductGrid = () => {
   const { products } = useAdmin();
@@ -26,10 +25,12 @@ const ProductGrid = () => {
             const effectivelyOutOfStock = isOutOfStock || 
               (product.variants && product.variants.length > 0 && allVariantsOutOfStock);
             
-            // Get the first image - either from the first variant or the product
-            const displayImage = product.variants && product.variants.length > 0 && product.variants[0].image
+            // Safely get the first image - handle undefined images
+            const displayImage = (product.variants && product.variants.length > 0 && product.variants[0].image)
               ? product.variants[0].image
-              : product.images[0];
+              : (product.images && product.images.length > 0) 
+                ? product.images[0] 
+                : '/placeholder.svg'; // Fallback to placeholder
             
             return (
               <Link key={product.id} to={`/product/${product.id}`}>
@@ -37,7 +38,7 @@ const ProductGrid = () => {
                   <div className="h-64 overflow-hidden rounded-md mb-4 relative">
                     <img 
                       src={displayImage} 
-                      alt={product.name}
+                      alt={product.name || 'Product'}
                       className={`w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105 ${effectivelyOutOfStock ? 'opacity-50 grayscale' : ''}`}
                     />
                     {effectivelyOutOfStock && (
@@ -49,11 +50,11 @@ const ProductGrid = () => {
                     )}
                   </div>
                   
-                  <h3 className="text-xl font-medium text-charcoal mb-2">{product.name}</h3>
+                  <h3 className="text-xl font-medium text-charcoal mb-2">{product.name || 'Unnamed Product'}</h3>
                   <div className="flex justify-between items-center">
-                    <p className="text-dark-gray">${product.price.toFixed(2)}</p>
+                    <p className="text-dark-gray">${(product.price || 0).toFixed(2)}</p>
                     {!effectivelyOutOfStock && (
-                      <p className="text-sm text-dark-gray">In stock: {product.stock}</p>
+                      <p className="text-sm text-dark-gray">In stock: {product.stock || 0}</p>
                     )}
                   </div>
                   
@@ -64,13 +65,17 @@ const ProductGrid = () => {
                         <div 
                           key={variant.id}
                           className="w-6 h-6 rounded-full border border-gray-300 overflow-hidden"
-                          title={variant.name}
+                          title={variant.name || ''}
                         >
-                          <img 
-                            src={variant.image} 
-                            alt={variant.name}
-                            className={`w-full h-full object-cover ${variant.stock <= 0 ? 'opacity-50 grayscale' : ''}`}
-                          />
+                          {variant.image ? (
+                            <img 
+                              src={variant.image} 
+                              alt={variant.name || ''}
+                              className={`w-full h-full object-cover ${variant.stock <= 0 ? 'opacity-50 grayscale' : ''}`}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200"></div>
+                          )}
                         </div>
                       ))}
                     </div>
