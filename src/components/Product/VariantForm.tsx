@@ -16,7 +16,7 @@ const VariantForm: React.FC<VariantFormProps> = ({ variants, onVariantChange }) 
     onVariantChange([
       ...variants,
       {
-        id: `variant-${Date.now()}`,
+        id: crypto.randomUUID(), // Using crypto.randomUUID() instead of a custom string format
         product_id: '', // Will be set by parent component
         name: '',
         image: '',
