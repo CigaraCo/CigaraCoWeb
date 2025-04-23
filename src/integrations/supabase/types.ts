@@ -115,6 +115,7 @@ export type Database = {
       product_variants: {
         Row: {
           id: string
+          image: string | null
           name: string | null
           price_diff: number | null
           product_id: string
@@ -122,6 +123,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          image?: string | null
           name?: string | null
           price_diff?: number | null
           product_id?: string
@@ -129,6 +131,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          image?: string | null
           name?: string | null
           price_diff?: number | null
           product_id?: string
