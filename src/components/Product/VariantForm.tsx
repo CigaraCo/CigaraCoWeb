@@ -61,6 +61,7 @@ const VariantForm: React.FC<VariantFormProps> = ({ variants, onVariantChange }) 
       <div className="flex justify-between items-center">
         <Label>Product Variants</Label>
         <Button type="button" onClick={handleAddVariant} variant="outline" size="sm">
+          <Plus className="mr-2 h-4 w-4" />
           Add Variant
         </Button>
       </div>
