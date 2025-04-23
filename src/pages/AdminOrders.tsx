@@ -116,6 +116,9 @@ const AdminOrders = () => {
     </div>
   );
   
+  // Safely get order with null checking
+  const selectedOrderData = selectedOrder ? getOrderById(selectedOrder) : null;
+  
   return (
     <AdminLayout title="Orders">
       <Tabs defaultValue="pending" className="w-full mb-6" onValueChange={setActiveTab}>
@@ -153,7 +156,7 @@ const AdminOrders = () => {
             <DialogTitle>Order Details</DialogTitle>
           </DialogHeader>
           
-          {selectedOrder && (
+          {selectedOrderData && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -161,13 +164,13 @@ const AdminOrders = () => {
                     Customer Information
                   </h3>
                   <p className="font-medium">
-                    {getOrderById(selectedOrder!)?.customer.name}
+                    {selectedOrderData.customer?.name || 'N/A'}
                   </p>
                   <p>
-                    {getOrderById(selectedOrder!)?.customer.email}
+                    {selectedOrderData.customer?.email || 'N/A'}
                   </p>
                   <p>
-                    {getOrderById(selectedOrder!)?.customer.phone}
+                    {selectedOrderData.customer?.phone || 'N/A'}
                   </p>
                 </div>
                 
@@ -176,7 +179,7 @@ const AdminOrders = () => {
                     Delivery Address
                   </h3>
                   <p>
-                    {getOrderById(selectedOrder!)?.customer.address}
+                    {selectedOrderData.customer?.address || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -195,24 +198,30 @@ const AdminOrders = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {getOrderById(selectedOrder!)?.items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>
-                          {item.variant_id ? item.name.split(' - ')[1] : 'Default'}
-                        </TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right">
-                          ${(item.price * (item.quantity || 0)).toFixed(2)}
-                        </TableCell>
+                    {selectedOrderData.items && selectedOrderData.items.length > 0 ? (
+                      selectedOrderData.items.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>
+                            {item.variant_id ? item.name?.split(' - ')[1] || 'Default' : 'Default'}
+                          </TableCell>
+                          <TableCell className="text-right">{item.quantity || 0}</TableCell>
+                          <TableCell className="text-right">
+                            ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-4">No items found</TableCell>
                       </TableRow>
-                    ))}
+                    )}
                     <TableRow>
                       <TableCell colSpan={3} className="text-right font-medium">
                         Total
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ${getOrderById(selectedOrder!)?.total.toFixed(2)}
+                        ${selectedOrderData.total?.toFixed(2) || '0.00'}
                       </TableCell>
                     </TableRow>
                   </TableBody>

@@ -27,28 +27,28 @@ export type Database = {
       order_items: {
         Row: {
           id: string
-          name: string | null
           order_id: string | null
           price: number | null
           product_id: string | null
+          product_name: string | null
           quantity: number | null
           variant_id: string | null
         }
         Insert: {
           id?: string
-          name?: string | null
           order_id?: string | null
           price?: number | null
           product_id?: string | null
+          product_name?: string | null
           quantity?: number | null
           variant_id?: string | null
         }
         Update: {
           id?: string
-          name?: string | null
           order_id?: string | null
           price?: number | null
           product_id?: string | null
+          product_name?: string | null
           quantity?: number | null
           variant_id?: string | null
         }
@@ -188,7 +188,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decrement_product_stock: {
+        Args: { product_id: string; quantity: number }
+        Returns: undefined
+      }
+      decrement_variant_stock: {
+        Args: { variant_id: string; quantity: number }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
