@@ -77,7 +77,7 @@ const AdminDashboard = () => {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">${order.total.toFixed(2)}</p>
+                      <p className="font-medium">${order.total?.toFixed(2) || '0.00'}</p>
                       <p className="text-sm">
                         <span className={`inline-block px-2 py-1 rounded-full text-xs ${
                           order.status === 'pending' 
@@ -114,13 +114,13 @@ const AdminDashboard = () => {
                   <div key={product.id} className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0">
                     <div className="flex items-center">
                       <img 
-                        src={product.images[0]} 
-                        alt={product.name} 
+                        src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder.svg'} 
+                        alt={product.name || 'Product'} 
                         className="w-10 h-10 rounded-md object-cover mr-3"
                       />
-                      <p className="font-medium">{product.name}</p>
+                      <p className="font-medium">{product.name || 'Unnamed Product'}</p>
                     </div>
-                    <p className="font-medium">${product.price.toFixed(2)}</p>
+                    <p className="font-medium">${(product.price || 0).toFixed(2)}</p>
                   </div>
                 ))}
               </div>
