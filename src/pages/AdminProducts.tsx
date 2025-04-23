@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
@@ -271,17 +272,17 @@ const AdminProducts = () => {
                     <TableRow key={product.id}>
                       <TableCell>
                         <img
-                          src={product.images[0]}
-                          alt={product.name}
+                          src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder.svg'}
+                          alt={product.name || 'Product'}
                           className="w-12 h-12 object-cover rounded-md"
                         />
                       </TableCell>
                       <TableCell>
-                        <p className="font-medium">{product.name}</p>
+                        <p className="font-medium">{product.name || 'Unnamed Product'}</p>
                       </TableCell>
-                      <TableCell>${product.price.toFixed(2)}</TableCell>
+                      <TableCell>${(product.price || 0).toFixed(2)}</TableCell>
                       <TableCell>
-                        <span className="capitalize">{product.category.replace('-', ' ')}</span>
+                        <span className="capitalize">{(product.category || 'uncategorized').replace('-', ' ')}</span>
                       </TableCell>
                       <TableCell>
                         <span className={product.stock <= 0 ? 'text-red-500 font-medium' : ''}>
