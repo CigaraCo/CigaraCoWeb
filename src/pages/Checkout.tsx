@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -40,7 +39,6 @@ const Checkout = () => {
     });
   };
   
-  // Check if there's enough stock for all items
   const checkStock = () => {
     const insufficientItems = items.filter(item => {
       const product = products.find(p => p.id === item.id);
@@ -64,14 +62,12 @@ const Checkout = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Check stock before proceeding
     if (!checkStock()) {
       setIsSubmitting(false);
       return;
     }
     
     try {
-      // Format order items to include all necessary information
       const orderItems = items.map(item => ({
         id: item.id,
         name: item.name,
@@ -81,7 +77,6 @@ const Checkout = () => {
         variantName: item.variantName || undefined,
       }));
       
-      // Create order with complete customer information
       const newOrder = {
         customer: {
           name: formData.fullName,
@@ -93,7 +88,6 @@ const Checkout = () => {
         total: getCartTotal(),
       };
       
-      // Send confirmation email
       const emailDetails = generateOrderConfirmationEmail({
         id: `ORD-${Date.now().toString().slice(-6)}`,
         customer: newOrder.customer,
@@ -114,7 +108,6 @@ const Checkout = () => {
         });
       }
       
-      // Save order and update product stock
       const savedOrder = await addOrder(newOrder);
       updateProductStock(items.map(item => ({ 
         id: item.id, 
@@ -122,10 +115,8 @@ const Checkout = () => {
         variantId: item.variantId 
       })));
       
-      // Clear cart
       clearCart();
       
-      // Show success message
       toast({
         title: "Order placed successfully",
         description: emailSent 
@@ -133,7 +124,6 @@ const Checkout = () => {
           : "Thank you for your order. We'll process it shortly.",
       });
       
-      // Redirect to confirmation page
       navigate('/order-confirmation', { 
         state: { 
           orderId: savedOrder.id, 

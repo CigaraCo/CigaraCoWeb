@@ -61,6 +61,7 @@ export interface OrderItem {
   name: string | null;
   quantity: number | null;
   price: number | null;
+  variantName?: string | null;
 }
 
 export interface Order {

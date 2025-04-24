@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from './SupabaseAuthContext';
@@ -60,7 +59,6 @@ export const useAdmin = () => {
 };
 
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Internal products will be converted to client products format
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,17 +78,14 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       .reduce((sum, order) => sum + (order.total || 0), 0);
   };
 
-  // Load products and orders from Supabase when admin is authenticated
   useEffect(() => {
     if (isAdmin) {
       const loadData = async () => {
         setIsLoading(true);
         try {
-          // Load products - convert from internal to client format
           const productsData = await productService.getAll();
           setProducts(productsData.map(p => convertToClientProduct(p)));
           
-          // Load orders
           const ordersData = await orderService.getAll();
           setOrders(ordersData);
         } catch (error) {
@@ -136,15 +131,12 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try {
       await productService.update(id, productData);
       
-      // Update local state - convert internal product data to client format
       setProducts(prev => prev.map(product => {
         if (product.id === id) {
-          // Create a merged product with the updated data
           const updatedInternalProduct = {
             ...product,
             ...productData,
             id,
-            // Ensure these required fields are present
             images: product.images || [],
             category: product.category || '',
             featured: typeof product.featured === 'boolean' ? product.featured : false
@@ -173,7 +165,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try {
       await productService.delete(id);
       
-      // Update local state
       setProducts(prev => {
         const productToDelete = prev.find(p => p.id === id);
         if (productToDelete) {
@@ -215,8 +206,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       console.log("Adding order with data:", orderData);
       const newOrder = await orderService.create(orderData);
       
-      // Format and add complete customer and items data to the newOrder
-      const completeOrder = {
+      const completeOrder: Order = {
         ...newOrder,
         customer: {
           name: orderData.customer.name,
@@ -226,15 +216,16 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         },
         items: orderData.items.map(item => ({
           id: item.id,
+          order_id: newOrder.id,
+          product_id: item.id,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
-          variant_id: item.variantId,
-          variantName: item.variantName,
+          variant_id: item.variantId || null,
+          variantName: item.variantName || null,
         })),
       };
       
-      // Update local state with the complete order
       setOrders(prev => [completeOrder, ...prev]);
       
       toast({
@@ -257,7 +248,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try {
       await orderService.updateStatus(id, status);
       
-      // Update local state
       setOrders(prev => 
         prev.map(order => 
           order.id === id ? { ...order, status } : order
@@ -282,7 +272,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try {
       await orderService.delete(id);
       
-      // Update local state
       setOrders(prev => prev.filter(order => order.id !== id));
       
       toast({
@@ -303,7 +292,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try {
       await productService.updateStock(items);
       
-      // Update local state
       setProducts(prev => {
         return prev.map(product => {
           const orderItem = items.find(item => item.id === product.id);

@@ -8,6 +8,7 @@ export interface CartItem {
   image: string;
   quantity: number;
   variantId?: string;
+  variantName?: string; // Added to match the usage in Checkout.tsx
 }
 
 interface CartContextType {
