@@ -76,6 +76,7 @@ export const generateOrderConfirmationEmail = (
       quantity: number;
     }[];
     total: number;
+    createdAt: string;
   }
 ): EmailDetails => {
   const itemsList = order.items
@@ -89,7 +90,7 @@ export const generateOrderConfirmationEmail = (
 
     Order Details:
     Order ID: ${order.id}
-    Date: ${new Date().toLocaleDateString()}
+    Date: ${new Date(order.createdAt).toLocaleDateString()}
 
     Items:
     ${itemsList}

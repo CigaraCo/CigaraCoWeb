@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -88,12 +89,15 @@ const Checkout = () => {
         total: getCartTotal(),
       };
       
+      // Generate a temporary order ID for email purposes
+      const tempOrderId = `ORD-${Date.now().toString().slice(-6)}`;
+      
       const emailDetails = generateOrderConfirmationEmail({
-        id: `ORD-${Date.now().toString().slice(-6)}`,
+        id: tempOrderId,
         customer: newOrder.customer,
         items: newOrder.items,
         total: newOrder.total,
-        status: 'pending',
+        // Remove the status field that's causing the error
         createdAt: new Date().toISOString(),
       });
       
