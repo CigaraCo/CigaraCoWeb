@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { 
   ProductVariant as ClientProductVariant, 
@@ -347,23 +346,45 @@ export const orderService = {
       return [];
     }
     
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    // Add customer property to match component expectations
-    return data.map(order => ({
-      ...order,
-      customer: {
-        name: order.customer_name,
-        email: order.customer_email,
-        phone: order.customer_phone,
-        address: order.customer_address
-      }
-    }));
+    try {
+      // Get orders
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Get all order items
+      const { data: allItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*');
+        
+      if (itemsError) throw itemsError;
+      
+      // Map items to their respective orders
+      const ordersWithData = orders.map(order => {
+        // Find items for this order
+        const orderItems = allItems.filter(item => item.order_id === order.id) || [];
+        
+        // Add customer property to match component expectations
+        return {
+          ...order,
+          customer: {
+            name: order.customer_name,
+            email: order.customer_email,
+            phone: order.customer_phone,
+            address: order.customer_address
+          },
+          items: orderItems
+        };
+      });
+      
+      return ordersWithData;
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      return [];
+    }
   },
   
   async getById(id: string): Promise<{ order: Order; items: OrderItem[] } | null> {
@@ -420,6 +441,8 @@ export const orderService = {
       throw new Error('Supabase client is not initialized');
     }
     
+    console.log("Creating order with data:", orderData);
+    
     // Create the order
     const { data: order, error } = await supabase
       .from('orders')
@@ -434,24 +457,37 @@ export const orderService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error("Error creating order:", error);
+      throw error;
+    }
+    
+    console.log("Order created:", order);
     
     // Create order items
     const orderItems = orderData.items.map(item => ({
       order_id: order.id,
       product_id: item.id,
-      product_name: item.name,
+      name: item.name,
       variant_id: item.variantId || null,
       variant_name: item.variantName || null,
       price: item.price,
       quantity: item.quantity
     }));
     
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
+    console.log("Creating order items:", orderItems);
     
-    if (itemsError) throw itemsError;
+    const { data: createdItems, error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems)
+      .select();
+    
+    if (itemsError) {
+      console.error("Error creating order items:", itemsError);
+      throw itemsError;
+    }
+    
+    console.log("Order items created:", createdItems);
     
     // Update product stock
     const stockItems = orderData.items.map(item => ({
@@ -460,9 +496,31 @@ export const orderService = {
       variantId: item.variantId
     }));
     
-    await productService.updateStock(stockItems);
+    try {
+      await productService.updateStock(stockItems);
+    } catch (stockError) {
+      console.error("Error updating stock:", stockError);
+      // Don't throw here, we want the order to be created even if stock update fails
+    }
     
-    return order;
+    // Return order with customer and items information
+    return {
+      ...order,
+      customer: {
+        name: orderData.customer.name,
+        email: orderData.customer.email,
+        phone: orderData.customer.phone,
+        address: orderData.customer.address
+      },
+      items: orderItems.map(item => ({
+        id: item.product_id || '',
+        order_id: order.id,
+        name: item.name || '',
+        price: item.price || 0,
+        quantity: item.quantity || 0,
+        variant_id: item.variant_id || null
+      }))
+    };
   },
   
   async updateStatus(id: string, status: Order['status']): Promise<void> {

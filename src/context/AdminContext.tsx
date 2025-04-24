@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from './SupabaseAuthContext';
@@ -211,17 +212,37 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     total: number;
   }) => {
     try {
+      console.log("Adding order with data:", orderData);
       const newOrder = await orderService.create(orderData);
       
-      // Update local state
-      setOrders(prev => [newOrder, ...prev]);
+      // Format and add complete customer and items data to the newOrder
+      const completeOrder = {
+        ...newOrder,
+        customer: {
+          name: orderData.customer.name,
+          email: orderData.customer.email,
+          phone: orderData.customer.phone,
+          address: orderData.customer.address,
+        },
+        items: orderData.items.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          variant_id: item.variantId,
+          variantName: item.variantName,
+        })),
+      };
+      
+      // Update local state with the complete order
+      setOrders(prev => [completeOrder, ...prev]);
       
       toast({
         title: "Order added",
         description: `Order #${newOrder.id} has been added`,
       });
       
-      return newOrder;
+      return completeOrder;
     } catch (error: any) {
       toast({
         title: "Error adding order",

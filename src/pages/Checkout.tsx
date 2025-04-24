@@ -71,28 +71,38 @@ const Checkout = () => {
     }
     
     try {
-      // Create order
+      // Format order items to include all necessary information
+      const orderItems = items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        variantId: item.variantId || undefined,
+        variantName: item.variantName || undefined,
+      }));
+      
+      // Create order with complete customer information
       const newOrder = {
-        id: `ORD-${Date.now().toString().slice(-6)}`,
         customer: {
           name: formData.fullName,
           email: formData.email,
           phone: formData.phone,
           address: formData.address,
         },
-        items: items.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-        })),
+        items: orderItems,
         total: getCartTotal(),
-        status: 'pending' as const,
-        createdAt: new Date().toISOString(),
       };
       
       // Send confirmation email
-      const emailDetails = generateOrderConfirmationEmail(newOrder);
+      const emailDetails = generateOrderConfirmationEmail({
+        id: `ORD-${Date.now().toString().slice(-6)}`,
+        customer: newOrder.customer,
+        items: newOrder.items,
+        total: newOrder.total,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      });
+      
       const emailSent = await sendEmail(emailDetails);
       
       if (!emailSent) {
@@ -105,8 +115,12 @@ const Checkout = () => {
       }
       
       // Save order and update product stock
-      addOrder(newOrder);
-      updateProductStock(items.map(item => ({ id: item.id, quantity: item.quantity })));
+      const savedOrder = await addOrder(newOrder);
+      updateProductStock(items.map(item => ({ 
+        id: item.id, 
+        quantity: item.quantity,
+        variantId: item.variantId 
+      })));
       
       // Clear cart
       clearCart();
@@ -122,7 +136,7 @@ const Checkout = () => {
       // Redirect to confirmation page
       navigate('/order-confirmation', { 
         state: { 
-          orderId: newOrder.id, 
+          orderId: savedOrder.id, 
           email: formData.email 
         }
       });

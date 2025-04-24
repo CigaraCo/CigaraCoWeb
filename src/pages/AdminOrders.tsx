@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -73,19 +74,19 @@ const AdminOrders = () => {
                 <TableCell>{order.id}</TableCell>
                 <TableCell>
                   <div>
-                    <p className="font-medium">{order.customer?.name}</p>
-                    <p className="text-sm text-muted-foreground">{order.customer?.email}</p>
+                    <p className="font-medium">{order.customer?.name || 'N/A'}</p>
+                    <p className="text-sm text-muted-foreground">{order.customer?.email || 'N/A'}</p>
                   </div>
                 </TableCell>
                 <TableCell>
-                  {new Date(order.created_at).toLocaleDateString()}
+                  {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
                 </TableCell>
                 <TableCell className="font-medium">
-                  ${order.total.toFixed(2)}
+                  ${(order.total || 0).toFixed(2)}
                 </TableCell>
                 <TableCell>
                   <Select
-                    defaultValue={order.status}
+                    defaultValue={order.status || 'pending'}
                     onValueChange={(value) => handleStatusChange(order.id, value)}
                   >
                     <SelectTrigger className="w-32">
@@ -154,6 +155,9 @@ const AdminOrders = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
+            <DialogDescription>
+              Order ID: {selectedOrderData?.id || 'N/A'}
+            </DialogDescription>
           </DialogHeader>
           
           {selectedOrderData && (
@@ -199,11 +203,11 @@ const AdminOrders = () => {
                   </TableHeader>
                   <TableBody>
                     {selectedOrderData.items && selectedOrderData.items.length > 0 ? (
-                      selectedOrderData.items.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.name}</TableCell>
+                      selectedOrderData.items.map((item, index) => (
+                        <TableRow key={item.id || `item-${index}`}>
+                          <TableCell>{item.name || 'Unknown Product'}</TableCell>
                           <TableCell>
-                            {item.variant_id ? item.name?.split(' - ')[1] || 'Default' : 'Default'}
+                            {item.variant_id ? (item.variantName || item.variant_id) : 'Default'}
                           </TableCell>
                           <TableCell className="text-right">{item.quantity || 0}</TableCell>
                           <TableCell className="text-right">
