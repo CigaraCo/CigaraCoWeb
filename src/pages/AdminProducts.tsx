@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
@@ -164,7 +163,28 @@ const AdminProducts = () => {
     }
     
     if (editingProduct && editingProduct.id) {
-      // Convert client variants to internal variants with proper product_id
+      let variantsWithPreservedIds: ClientProductVariant[] = [];
+      
+      if (formData.variants && formData.variants.length > 0) {
+        variantsWithPreservedIds = formData.variants.map(newVariant => {
+          if (editingProduct.variants) {
+            const originalVariant = editingProduct.variants.find(v => v.id === newVariant.id);
+            if (originalVariant) {
+              return {
+                ...newVariant,
+                id: originalVariant.id,
+                product_id: editingProduct.id || ''
+              };
+            }
+          }
+          return {
+            ...newVariant,
+            id: newVariant.id || crypto.randomUUID(),
+            product_id: editingProduct.id || ''
+          };
+        });
+      }
+      
       const productId = editingProduct.id;
       const productData: Partial<InternalProduct> = {
         name: formData.name,
@@ -176,9 +196,8 @@ const AdminProducts = () => {
         featured: formData.featured
       };
       
-      // Only include variants if they exist
-      if (formData.variants && formData.variants.length > 0) {
-        productData.variants = formData.variants.map(v => 
+      if (variantsWithPreservedIds.length > 0) {
+        productData.variants = variantsWithPreservedIds.map(v => 
           convertFromClientVariant(v, productId)
         );
       }
@@ -195,7 +214,6 @@ const AdminProducts = () => {
         featured: formData.featured
       };
       
-      // Only include variants if they exist
       if (formData.variants && formData.variants.length > 0) {
         productData.variants = formData.variants.map(v => 
           convertFromClientVariant(v, '')

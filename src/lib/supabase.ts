@@ -263,26 +263,90 @@ export const productService = {
     
     // Handle variants if provided
     if (variants) {
-      // First delete existing variants
-      const { error: deleteError } = await supabase
-        .from('product_variants')
-        .delete()
-        .eq('product_id', id);
-      
-      if (deleteError) throw deleteError;
-      
-      // Then insert new ones
-      if (variants.length > 0) {
-        const variantsWithProductId = variants.map(variant => ({
-          ...variant,
-          product_id: id
-        }));
-        
-        const { error: insertError } = await supabase
+      try {
+        // Instead of deleting all existing variants, update them individually
+        // First, get current variants to compare
+        const { data: existingVariants, error: fetchError } = await supabase
           .from('product_variants')
-          .insert(variantsWithProductId);
+          .select('*')
+          .eq('product_id', id);
         
-        if (insertError) throw insertError;
+        if (fetchError) throw fetchError;
+        
+        // Track the variants we're going to keep (by ID)
+        const updatedVariantIds = new Set(variants.map(v => v.id));
+        
+        // For each existing variant...
+        for (const existingVariant of existingVariants || []) {
+          // If it's in our updates list, update it
+          if (updatedVariantIds.has(existingVariant.id)) {
+            const variantToUpdate = variants.find(v => v.id === existingVariant.id);
+            if (variantToUpdate) {
+              const { error: updateError } = await supabase
+                .from('product_variants')
+                .update({
+                  name: variantToUpdate.name,
+                  image: variantToUpdate.image,
+                  stock: variantToUpdate.stock,
+                  price_diff: variantToUpdate.price_diff
+                })
+                .eq('id', existingVariant.id);
+              
+              if (updateError) throw updateError;
+            }
+          } 
+          // If it's not in our updates list and doesn't have order items referencing it,
+          // we can safely delete it
+          else {
+            // Check if this variant is referenced by any order items
+            const { data: orderItems, error: checkError } = await supabase
+              .from('order_items')
+              .select('id')
+              .eq('variant_id', existingVariant.id)
+              .limit(1);
+            
+            if (checkError) throw checkError;
+            
+            // If no order items reference this variant, we can delete it
+            if (!orderItems || orderItems.length === 0) {
+              const { error: deleteError } = await supabase
+                .from('product_variants')
+                .delete()
+                .eq('id', existingVariant.id);
+              
+              if (deleteError) throw deleteError;
+            } else {
+              // If there are order items, just set stock to 0 instead of deleting
+              const { error: updateError } = await supabase
+                .from('product_variants')
+                .update({ stock: 0 })
+                .eq('id', existingVariant.id);
+              
+              if (updateError) throw updateError;
+            }
+          }
+        }
+        
+        // Insert new variants (ones that don't exist in the database yet)
+        const newVariants = variants.filter(v => 
+          !existingVariants || !existingVariants.some(ev => ev.id === v.id)
+        );
+        
+        if (newVariants.length > 0) {
+          const variantsWithProductId = newVariants.map(variant => ({
+            ...variant,
+            product_id: id
+          }));
+          
+          const { error: insertError } = await supabase
+            .from('product_variants')
+            .insert(variantsWithProductId);
+          
+          if (insertError) throw insertError;
+        }
+      } catch (error) {
+        console.error('Error updating variants:', error);
+        throw error;
       }
     }
   },
