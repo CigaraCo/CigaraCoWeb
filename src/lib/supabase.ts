@@ -465,11 +465,11 @@ export const orderService = {
     
     console.log("Order created:", order);
     
-    // Create order items
+    // Create order items - Map to correct field names in the database
     const orderItems = orderData.items.map(item => ({
       order_id: order.id,
       product_id: item.id,
-      name: item.name,
+      product_name: item.name, // Changed from "name" to "product_name" to match the database schema
       variant_id: item.variantId || null,
       variant_name: item.variantName || null,
       price: item.price,
@@ -513,13 +513,15 @@ export const orderService = {
         phone: orderData.customer.phone,
         address: orderData.customer.address
       },
-      items: orderItems.map(item => ({
-        id: item.product_id || '',
+      items: createdItems.map(item => ({
+        id: item.id,
         order_id: order.id,
-        name: item.name || '',
+        product_id: item.product_id || '',
+        variant_id: item.variant_id || null,
+        name: item.product_name || '',  // Map from product_name back to name for frontend
         price: item.price || 0,
         quantity: item.quantity || 0,
-        variant_id: item.variant_id || null
+        variantName: item.variant_name || null
       }))
     };
   },
