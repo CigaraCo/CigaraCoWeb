@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { usePublicData } from '@/context/PublicDataContext';
@@ -5,6 +6,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const ProductGrid = () => {
   const { products, isLoading } = usePublicData();
+
+  // Show clear debugging information when no products are available
+  console.log('ProductGrid rendering with:', {
+    productsCount: products.length,
+    isLoading,
+    productsData: products.slice(0, 2) // Log first two products for debugging
+  });
 
   if (isLoading) {
     return (
@@ -21,6 +29,23 @@ const ProductGrid = () => {
                 <Skeleton className="h-5 w-1/3" />
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Show a message when there are no products
+  if (products.length === 0) {
+    return (
+      <section id="products" className="py-16 bg-cream">
+        <div className="container-custom">
+          <h2 className="text-3xl font-medium text-charcoal mb-2">Our Products</h2>
+          <p className="text-dark-gray mb-4">Discover our premium collection of storage solutions.</p>
+          
+          <div className="p-8 rounded-lg bg-gray-50 text-center">
+            <h3 className="text-xl mb-2 text-charcoal">No products available</h3>
+            <p className="text-dark-gray">Please check back later for our latest products.</p>
           </div>
         </div>
       </section>

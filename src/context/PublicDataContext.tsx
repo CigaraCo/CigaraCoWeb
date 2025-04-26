@@ -29,6 +29,7 @@ export const PublicDataProvider: React.FC<{ children: ReactNode }> = ({ children
     const fetchPublicData = async () => {
       setIsLoading(true);
       try {
+        console.log('Fetching products data...');
         // Fetch products with their variants
         const { data: productsData, error: productsError } = await supabase
           .from('products')
@@ -40,6 +41,8 @@ export const PublicDataProvider: React.FC<{ children: ReactNode }> = ({ children
           return;
         }
 
+        console.log('Products data fetched:', productsData?.length || 0, 'products');
+        
         // Fetch all variants
         const { data: variantsData, error: variantsError } = await supabase
           .from('product_variants')
@@ -49,6 +52,8 @@ export const PublicDataProvider: React.FC<{ children: ReactNode }> = ({ children
           console.error('Error fetching product variants:', variantsError);
           return;
         }
+
+        console.log('Product variants fetched:', variantsData?.length || 0, 'variants');
 
         // Map variants to their respective products
         const productsWithVariants = productsData.map(product => {
@@ -111,13 +116,15 @@ export const PublicDataProvider: React.FC<{ children: ReactNode }> = ({ children
             clientProduct.images = [];
           }
           
-          return clientProduct;
+          return clientProduct as Product;
         });
         
+        console.log('Setting products state with', clientProducts.length, 'items');
         setProducts(clientProducts);
         
         // Set featured products
         const featured = clientProducts.filter(product => product.featured);
+        console.log('Setting featured products with', featured.length, 'items');
         setFeaturedProducts(featured);
       } catch (error) {
         console.error('Error in fetchPublicData:', error);
