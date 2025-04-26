@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { usePublicData } from '@/context/PublicDataContext';
@@ -74,7 +73,7 @@ const ProductGrid = () => {
                   
                   <h3 className="text-xl font-medium text-charcoal mb-2">{product.name || 'Unnamed Product'}</h3>
                   <div className="flex justify-between items-center">
-                    <p className="text-dark-gray">${(product.price || 0).toFixed(2)}</p>
+                    <p className="text-dark-gray">{product.price ? `${product.price.toFixed(2)} JD` : '0.00 JD'}</p>
                     {!effectivelyOutOfStock && (
                       <p className="text-sm text-dark-gray">In stock: {product.stock || 0}</p>
                     )}

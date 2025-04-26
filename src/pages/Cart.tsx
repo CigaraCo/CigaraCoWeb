@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -85,10 +84,10 @@ const Cart = () => {
                         </div>
                       </td>
                       <td className="py-4 text-right">
-                        ${item.price.toFixed(2)}
+                        {item.price.toFixed(2)} JD
                       </td>
                       <td className="py-4 text-right font-medium">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        {(item.price * item.quantity).toFixed(2)} JD
                       </td>
                       <td className="py-4 text-right">
                         <Button
@@ -123,7 +122,7 @@ const Cart = () => {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>${getCartTotal().toFixed(2)}</span>
+                  <span>{getCartTotal().toFixed(2)} JD</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
@@ -131,7 +130,7 @@ const Cart = () => {
                 </div>
                 <div className="border-t border-gray-200 pt-3 flex justify-between font-medium text-lg">
                   <span>Total</span>
-                  <span>${getCartTotal().toFixed(2)}</span>
+                  <span>{getCartTotal().toFixed(2)} JD</span>
                 </div>
               </div>
               

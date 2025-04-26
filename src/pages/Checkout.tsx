@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -233,13 +232,13 @@ const Checkout = () => {
                     <span>
                       {item.name} x {item.quantity}
                     </span>
-                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    <span>{(item.price * item.quantity).toFixed(2)} JD</span>
                   </div>
                 ))}
                 
                 <div className="border-t border-gray-200 pt-3 flex justify-between font-medium text-lg">
                   <span>Total</span>
-                  <span>${getCartTotal().toFixed(2)}</span>
+                  <span>{getCartTotal().toFixed(2)} JD</span>
                 </div>
               </div>
               

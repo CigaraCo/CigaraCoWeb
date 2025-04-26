@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, ShoppingBag } from 'lucide-react';
@@ -27,7 +26,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
   return (
     <div>
       <h1 className="text-3xl font-medium text-charcoal mb-4">{name}</h1>
-      <p className="text-2xl text-charcoal mb-6">${price.toFixed(2)}</p>
+      <p className="text-2xl text-charcoal mb-6">{price.toFixed(2)} JD</p>
       
       <div className="mb-8">
         <p className="text-dark-gray">{description}</p>
@@ -75,4 +74,3 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
 };
 
 export default ProductInfo;
-
