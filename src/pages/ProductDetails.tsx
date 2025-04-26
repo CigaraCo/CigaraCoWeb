@@ -1,174 +1,122 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAdmin } from '@/context/AdminContext';
-import { useCart } from '@/context/CartContext';
 import MainLayout from '@/components/Layout/MainLayout';
-import { AlertTriangle } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import ImageGallery from '@/components/Product/ImageGallery';
-import VariantSelector from '@/components/Product/VariantSelector';
 import ProductInfo from '@/components/Product/ProductInfo';
-import { ProductVariant } from '@/integrations/supabase/client';
+import { usePublicData } from '@/context/PublicDataContext';
+import { Product } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
+import { convertToClientProduct } from '@/lib/supabase';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { products } = useAdmin();
-  const { addItem } = useCart();
-  const [quantity, setQuantity] = useState(1);
-  const [showSoldOutDialog, setShowSoldOutDialog] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState('');
-  
-  const product = products.find(p => p.id === id);
-  
+  const { products } = usePublicData();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    if (product) {
-      // Set default selected image to first product image
-      if (product.images && product.images.length > 0) {
-        setSelectedImage(product.images[0]);
-      }
+    const fetchProduct = async () => {
+      setIsLoading(true);
       
-      // Set default selected variant if variants exist
-      if (product.variants && product.variants.length > 0) {
-        setSelectedVariant(product.variants[0].id);
-        // Use variant image as the selected image
-        setSelectedImage(product.variants[0].image);
+      try {
+        // First check if the product is already in our context
+        const contextProduct = products.find(p => p.id === id);
+        
+        if (contextProduct) {
+          setProduct(contextProduct);
+          setIsLoading(false);
+          return;
+        }
+        
+        // If not found in context, fetch from Supabase directly
+        const { data: productData, error: productError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (productError || !productData) {
+          console.error('Error fetching product:', productError);
+          navigate('/');
+          return;
+        }
+        
+        // Fetch variants for this product
+        const { data: variantsData, error: variantsError } = await supabase
+          .from('product_variants')
+          .select('*')
+          .eq('product_id', id);
+          
+        if (variantsError) {
+          console.error('Error fetching product variants:', variantsError);
+        }
+        
+        const productWithVariants = {
+          ...productData,
+          variants: variantsData || []
+        };
+        
+        setProduct(convertToClientProduct(productWithVariants));
+      } catch (error) {
+        console.error('Error in fetchProduct:', error);
+        navigate('/');
+      } finally {
+        setIsLoading(false);
       }
+    };
+    
+    if (id) {
+      fetchProduct();
     }
-  }, [product]);
-  
-  if (!product) {
+  }, [id, navigate, products]);
+
+  if (isLoading) {
     return (
       <MainLayout>
-        <div className="container-custom py-20 text-center">
-          <h2 className="text-2xl font-medium mb-4">Product Not Found</h2>
-          <p className="mb-8">The product you're looking for doesn't exist or has been removed.</p>
+        <div className="container-custom py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div>
+              <Skeleton className="h-96 w-full rounded-md" />
+              <div className="mt-4 flex gap-2">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-20 w-20 rounded-md" />
+                ))}
+              </div>
+            </div>
+            <div>
+              <Skeleton className="h-10 w-3/4 mb-4" />
+              <Skeleton className="h-6 w-1/4 mb-6" />
+              <Skeleton className="h-32 w-full mb-6" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
         </div>
       </MainLayout>
     );
   }
-  
-  const currentVariant = selectedVariant 
-    ? product.variants?.find(v => v.id === selectedVariant)
-    : null;
-  
-  const isOutOfStock = currentVariant
-    ? currentVariant.stock <= 0
-    : product.stock <= 0;
-  
-  const availableStock = currentVariant
-    ? currentVariant.stock
-    : product.stock;
-  
-  useEffect(() => {
-    if (isOutOfStock) {
-      setShowSoldOutDialog(true);
-    }
-  }, [isOutOfStock]);
-  
-  const handleQuantityChange = (amount: number) => {
-    const newQuantity = quantity + amount;
-    if (newQuantity > 0 && newQuantity <= availableStock) {
-      setQuantity(newQuantity);
-    }
-  };
-  
-  const handleVariantSelect = (variantId: string) => {
-    setSelectedVariant(variantId);
-    const variant = product.variants?.find(v => v.id === variantId);
-    if (variant) {
-      setSelectedImage(variant.image);
-      if (quantity > variant.stock) {
-        setQuantity(variant.stock > 0 ? 1 : 0);
-      }
-    }
-  };
-  
-  const handleAddToCart = () => {
-    if (quantity > availableStock) {
-      toast({
-        title: "Not enough stock",
-        description: `Only ${availableStock} units available.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    addItem({
-      id: product.id,
-      name: product.name + (currentVariant ? ` - ${currentVariant.name}` : ''),
-      price: product.price,
-      image: selectedImage,
-      quantity,
-      variantId: selectedVariant || undefined
-    });
-    
-    navigate('/cart');
-  };
-  
-  // Determine the display images - either product images or variant images
-  const displayImages = product.variants && product.variants.length > 0
-    ? product.variants.map(v => v.image)
-    : product.images;
-  
+
+  if (!product) {
+    return (
+      <MainLayout>
+        <div className="container-custom py-12">
+          <h1 className="text-2xl font-medium">Product not found</h1>
+          <p className="mt-4">Sorry, we couldn't find the product you're looking for.</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="container-custom py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <ImageGallery
-            images={displayImages}
-            selectedImage={selectedImage}
-            setSelectedImage={setSelectedImage}
-            isOutOfStock={isOutOfStock}
-          />
-          
-          <div>
-            <ProductInfo
-              name={product.name}
-              price={product.price}
-              description={product.description}
-              availableStock={availableStock}
-              isOutOfStock={isOutOfStock}
-              quantity={quantity}
-              onQuantityChange={handleQuantityChange}
-              onAddToCart={handleAddToCart}
-            />
-            
-            {product.variants && product.variants.length > 0 && (
-              <VariantSelector
-                variants={product.variants}
-                selectedVariant={selectedVariant}
-                onVariantSelect={handleVariantSelect}
-              />
-            )}
-          </div>
+          <ImageGallery product={product} />
+          <ProductInfo product={product} />
         </div>
       </div>
-      
-      {/* Sold Out Dialog */}
-      <Dialog open={showSoldOutDialog} onOpenChange={setShowSoldOutDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
-              Out of Stock
-            </DialogTitle>
-          </DialogHeader>
-          <DialogDescription>
-            Due to high demand, this product is currently sold out. We are waiting for supplies 
-            to restock. Thank you for your patience and interest in our products.
-          </DialogDescription>
-        </DialogContent>
-      </Dialog>
     </MainLayout>
   );
 };

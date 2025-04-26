@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import { AdminProvider, useAdmin } from "./context/AdminContext";
+import { PublicDataProvider } from "./context/PublicDataContext";
 import { AuthProvider, useAuth } from "./context/SupabaseAuthContext";
 import { supabase } from "./lib/supabase";
 import { useState, useEffect } from "react";
@@ -75,39 +76,41 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <AuthProvider>
-        <CartProvider>
-          <AdminProvider>
-            <TooltipProvider>
-              <SupabaseErrorBanner />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/product/:id" element={<ProductDetails />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                <Route path="/admin" element={<AdminLogin />} />
-                <Route path="/admin/dashboard" element={
-                  <ProtectedRoute>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/orders" element={
-                  <ProtectedRoute>
-                    <AdminOrders />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/products" element={
-                  <ProtectedRoute>
-                    <AdminProducts />
-                  </ProtectedRoute>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <Toaster />
-              <Sonner />
-            </TooltipProvider>
-          </AdminProvider>
-        </CartProvider>
+        <PublicDataProvider>
+          <CartProvider>
+            <AdminProvider>
+              <TooltipProvider>
+                <SupabaseErrorBanner />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                  <Route path="/admin" element={<AdminLogin />} />
+                  <Route path="/admin/dashboard" element={
+                    <ProtectedRoute>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/orders" element={
+                    <ProtectedRoute>
+                      <AdminOrders />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/products" element={
+                    <ProtectedRoute>
+                      <AdminProducts />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <Toaster />
+                <Sonner />
+              </TooltipProvider>
+            </AdminProvider>
+          </CartProvider>
+        </PublicDataProvider>
       </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>
