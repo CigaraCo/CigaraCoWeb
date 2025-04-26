@@ -18,7 +18,7 @@ interface ProductInfoProps {
 
 // Add support for both direct props and product prop
 const ProductInfo: React.FC<ProductInfoProps | { product: Product }> = (props) => {
-  const { addToCart } = useCart();
+  const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   
   // If we receive a product prop, extract the necessary values
@@ -37,12 +37,12 @@ const ProductInfo: React.FC<ProductInfoProps | { product: Product }> = (props) =
     
     // Handle add to cart
     const handleAddToCart = () => {
-      addToCart({
+      addItem({
         id: product.id,
         name: product.name || 'Unnamed Product',
         price: product.price || 0,
         quantity: quantity,
-        image: product.images && product.images.length > 0 ? product.images[0] : undefined
+        image: product.images && product.images.length > 0 ? product.images[0] : ''
       });
     };
     

@@ -7,7 +7,6 @@ import ProductInfo from '@/components/Product/ProductInfo';
 import { usePublicData } from '@/context/PublicDataContext';
 import { Product } from '@/integrations/supabase/client';
 import { supabase } from '@/integrations/supabase/client';
-import { convertToClientProduct } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const ProductDetails = () => {
@@ -54,21 +53,28 @@ const ProductDetails = () => {
           console.error('Error fetching product variants:', variantsError);
         }
         
-        // Ensure images is an array
+        // Ensure images is an array of strings
         let parsedImages: string[] = [];
         if (productData.images) {
           try {
             // Handle when images is already an array
             if (Array.isArray(productData.images)) {
-              parsedImages = productData.images;
+              parsedImages = productData.images.map(img => String(img));
             } 
             // Handle when images is a JSON string
             else if (typeof productData.images === 'string') {
-              parsedImages = JSON.parse(productData.images);
+              const parsed = JSON.parse(productData.images);
+              parsedImages = Array.isArray(parsed) ? parsed.map(img => String(img)) : [];
             }
             // Handle when images is a JSON object from Supabase
             else {
-              parsedImages = productData.images as unknown as string[];
+              // Ensure all items in the array are strings
+              const jsonArray = productData.images as unknown as any[];
+              if (Array.isArray(jsonArray)) {
+                parsedImages = jsonArray.map(img => String(img));
+              } else {
+                parsedImages = [];
+              }
             }
           } catch (e) {
             console.error('Error parsing product images:', e);
@@ -76,14 +82,19 @@ const ProductDetails = () => {
           }
         }
         
-        const productWithVariants = {
+        const productWithVariants: Product = {
           ...productData,
           images: parsedImages,
-          variants: variantsData || []
+          variants: variantsData || [],
+          price: productData.price || 0,
+          stock: productData.stock || 0,
+          featured: productData.featured || false,
+          category: productData.category || '',
+          description: productData.description || '',
+          name: productData.name || ''
         };
         
-        const clientProduct = convertToClientProduct(productWithVariants);
-        setProduct(clientProduct);
+        setProduct(productWithVariants);
       } catch (error) {
         console.error('Error in fetchProduct:', error);
         navigate('/');

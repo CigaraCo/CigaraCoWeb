@@ -62,15 +62,22 @@ export const PublicDataProvider: React.FC<{ children: ReactNode }> = ({ children
             try {
               // Handle when images is already an array
               if (Array.isArray(product.images)) {
-                parsedImages = product.images;
+                parsedImages = product.images.map(img => String(img));
               } 
               // Handle when images is a JSON string
               else if (typeof product.images === 'string') {
-                parsedImages = JSON.parse(product.images);
+                const parsed = JSON.parse(product.images);
+                parsedImages = Array.isArray(parsed) ? parsed.map(img => String(img)) : [];
               }
               // Handle when images is a JSON object from Supabase
               else {
-                parsedImages = product.images as unknown as string[];
+                // Ensure all items in the array are strings
+                const jsonArray = product.images as unknown as any[];
+                if (Array.isArray(jsonArray)) {
+                  parsedImages = jsonArray.map(img => String(img));
+                } else {
+                  parsedImages = [];
+                }
               }
             } catch (e) {
               console.error('Error parsing product images:', e);
@@ -87,12 +94,23 @@ export const PublicDataProvider: React.FC<{ children: ReactNode }> = ({ children
 
         // Convert to client product format and ensure proper type handling
         const clientProducts = productsWithVariants.map(product => {
-          // Use the convertToClientProduct function but ensure images are arrays
-          const clientProduct = convertToClientProduct(product);
-          // Double check that images is always an array
+          // Create a product with the right types
+          const clientProduct = {
+            ...product,
+            price: product.price || 0,
+            stock: product.stock || 0,
+            featured: product.featured || false,
+            category: product.category || '',
+            description: product.description || '',
+            name: product.name || '',
+            variants: product.variants || []
+          };
+          
+          // Double check that images is always an array of strings
           if (!clientProduct.images || !Array.isArray(clientProduct.images)) {
             clientProduct.images = [];
           }
+          
           return clientProduct;
         });
         
