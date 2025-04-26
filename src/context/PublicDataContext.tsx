@@ -56,14 +56,45 @@ export const PublicDataProvider: React.FC<{ children: ReactNode }> = ({ children
             variant => variant.product_id === product.id
           );
           
+          // Convert JSON images to array if needed
+          let parsedImages: string[] = [];
+          if (product.images) {
+            try {
+              // Handle when images is already an array
+              if (Array.isArray(product.images)) {
+                parsedImages = product.images;
+              } 
+              // Handle when images is a JSON string
+              else if (typeof product.images === 'string') {
+                parsedImages = JSON.parse(product.images);
+              }
+              // Handle when images is a JSON object from Supabase
+              else {
+                parsedImages = product.images as unknown as string[];
+              }
+            } catch (e) {
+              console.error('Error parsing product images:', e);
+              parsedImages = [];
+            }
+          }
+          
           return {
             ...product,
+            images: parsedImages,
             variants: productVariants
           };
         });
 
-        // Convert to client product format
-        const clientProducts = productsWithVariants.map(convertToClientProduct);
+        // Convert to client product format and ensure proper type handling
+        const clientProducts = productsWithVariants.map(product => {
+          // Use the convertToClientProduct function but ensure images are arrays
+          const clientProduct = convertToClientProduct(product);
+          // Double check that images is always an array
+          if (!clientProduct.images || !Array.isArray(clientProduct.images)) {
+            clientProduct.images = [];
+          }
+          return clientProduct;
+        });
         
         setProducts(clientProducts);
         

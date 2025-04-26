@@ -54,12 +54,36 @@ const ProductDetails = () => {
           console.error('Error fetching product variants:', variantsError);
         }
         
+        // Ensure images is an array
+        let parsedImages: string[] = [];
+        if (productData.images) {
+          try {
+            // Handle when images is already an array
+            if (Array.isArray(productData.images)) {
+              parsedImages = productData.images;
+            } 
+            // Handle when images is a JSON string
+            else if (typeof productData.images === 'string') {
+              parsedImages = JSON.parse(productData.images);
+            }
+            // Handle when images is a JSON object from Supabase
+            else {
+              parsedImages = productData.images as unknown as string[];
+            }
+          } catch (e) {
+            console.error('Error parsing product images:', e);
+            parsedImages = [];
+          }
+        }
+        
         const productWithVariants = {
           ...productData,
+          images: parsedImages,
           variants: variantsData || []
         };
         
-        setProduct(convertToClientProduct(productWithVariants));
+        const clientProduct = convertToClientProduct(productWithVariants);
+        setProduct(clientProduct);
       } catch (error) {
         console.error('Error in fetchProduct:', error);
         navigate('/');
