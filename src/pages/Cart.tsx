@@ -57,7 +57,12 @@ const Cart = () => {
                             alt={item.name}
                             className="w-16 h-16 object-cover rounded-md mr-4"
                           />
-                          <span className="font-medium text-charcoal">{item.name}</span>
+                          <div>
+                            <span className="font-medium text-charcoal">{item.name}</span>
+                            {item.variantName && (
+                              <div className="text-sm text-dark-gray mt-1">Variant: {item.variantName}</div>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="py-4">

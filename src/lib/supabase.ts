@@ -412,7 +412,7 @@ export const orderService = {
     }
     
     try {
-      // Get orders
+      // Get orders with created_at timestamp
       const { data: orders, error } = await supabase
         .from('orders')
         .select('*')
@@ -420,21 +420,43 @@ export const orderService = {
       
       if (error) throw error;
       
-      // Get all order items
+      // Get all order items with product information
       const { data: allItems, error: itemsError } = await supabase
         .from('order_items')
-        .select('*');
+        .select(`
+          *,
+          products:product_id (
+            name,
+            description
+          ),
+          product_variants:variant_id (
+            name,
+            price_diff
+          )
+        `);
         
       if (itemsError) throw itemsError;
       
       // Map items to their respective orders
       const ordersWithData = orders.map(order => {
         // Find items for this order
-        const orderItems = allItems.filter(item => item.order_id === order.id) || [];
+        const orderItems = allItems
+          .filter(item => item.order_id === order.id)
+          .map(item => ({
+            id: item.id,
+            order_id: item.order_id,
+            product_id: item.product_id,
+            variant_id: item.variant_id,
+            name: item.products?.name || item.product_name || 'Unknown Product',
+            quantity: item.quantity || 0,
+            price: item.price || 0,
+            variantName: item.product_variants?.name || item.variant_name || null
+          })) || [];
         
-        // Add customer property to match component expectations
+        // Add customer property and ensure created_at is properly formatted
         return {
           ...order,
+          created_at: order.created_at || new Date().toISOString(),
           customer: {
             name: order.customer_name,
             email: order.customer_email,
@@ -508,7 +530,7 @@ export const orderService = {
     
     console.log("Creating order with data:", orderData);
     
-    // Create the order
+    // Create the order with created_at timestamp
     const { data: order, error } = await supabase
       .from('orders')
       .insert([{
@@ -517,9 +539,10 @@ export const orderService = {
         customer_phone: orderData.customer.phone,
         customer_address: orderData.customer.address,
         total: orderData.total,
-        status: 'pending'
+        status: 'pending',
+        created_at: new Date().toISOString()
       }])
-      .select()
+      .select('*')
       .single();
     
     if (error) {
@@ -529,12 +552,12 @@ export const orderService = {
     
     console.log("Order created:", order);
     
-    // Create order items - Map to correct field names in the database
+    // Create order items with proper product and variant information
     const orderItems = orderData.items.map(item => ({
       order_id: order.id,
       product_id: item.id,
-      product_name: item.name, // Changed from "name" to "product_name" to match the database schema
       variant_id: item.variantId || null,
+      product_name: item.name,
       variant_name: item.variantName || null,
       price: item.price,
       quantity: item.quantity
@@ -545,7 +568,17 @@ export const orderService = {
     const { data: createdItems, error: itemsError } = await supabase
       .from('order_items')
       .insert(orderItems)
-      .select();
+      .select(`
+        *,
+        products:product_id (
+          name,
+          description
+        ),
+        product_variants:variant_id (
+          name,
+          price_diff
+        )
+      `);
     
     if (itemsError) {
       console.error("Error creating order items:", itemsError);
@@ -568,7 +601,7 @@ export const orderService = {
       // Don't throw here, we want the order to be created even if stock update fails
     }
     
-    // Return order with customer and items information
+    // Return order with properly mapped customer and items information
     return {
       ...order,
       customer: {
@@ -582,10 +615,10 @@ export const orderService = {
         order_id: order.id,
         product_id: item.product_id || '',
         variant_id: item.variant_id || null,
-        name: item.product_name || '',  // Map from product_name back to name for frontend
+        name: item.products?.name || item.product_name || 'Unknown Product',
         price: item.price || 0,
         quantity: item.quantity || 0,
-        variantName: item.variant_name || null
+        variantName: item.product_variants?.name || item.variant_name || null
       }))
     };
   },

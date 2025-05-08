@@ -1,118 +1,230 @@
-
 import { toast } from '@/components/ui/use-toast';
+import emailjs from '@emailjs/browser';
 
-export interface EmailDetails {
-  to: string;
-  subject: string;
-  body: string;
-}
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 
-export const sendEmail = async (details: EmailDetails): Promise<boolean> => {
-  // In a real app, you would use a mail service API here
-  // For now, we'll log the details and simulate success
-  
+// Comprehensive test function
+export const verifyEmailConfig = async (testEmail: string): Promise<boolean> => {
   try {
-    console.log('Sending email to:', details.to);
-    console.log('Subject:', details.subject);
-    console.log('Body:', details.body);
+    console.log('Starting EmailJS configuration verification...');
     
-    // Validate email format
-    if (!isValidEmail(details.to)) {
-      console.error('Invalid email address:', details.to);
-      toast({
-        title: "Invalid email address",
-        description: "Please provide a valid email address.",
-        variant: "destructive",
-      });
-      return false;
+    // Step 1: Check if all required values are present
+    const configCheck = {
+      publicKey: EMAILJS_PUBLIC_KEY ? 'Present' : 'Missing',
+      serviceId: EMAILJS_SERVICE_ID ? 'Present' : 'Missing',
+      templateId: EMAILJS_TEMPLATE_ID ? 'Present' : 'Missing'
+    };
+    
+    console.log('Configuration check:', configCheck);
+    
+    if (!EMAILJS_PUBLIC_KEY || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
+      throw new Error('Missing required EmailJS configuration values');
     }
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // For a real implementation, you would use a backend API here.
-    // However, browser-side JavaScript cannot send emails directly due to security restrictions.
-    // In a production app, you would:
-    // 1. Call a server endpoint (e.g., fetch('/api/send-email', { method: 'POST', body: JSON.stringify(details) }))
-    // 2. The server would use a service like SendGrid, Mailgun, etc. to send the actual email
-    
-    // For this demo, we'll show an informational toast about email limitations
-    toast({
-      title: "Email Functionality Note",
-      description: "In a production environment, this would send a real email via a backend service. For now, check the console to see the email content.",
+
+    // Step 2: Initialize EmailJS
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    console.log('EmailJS initialized');
+
+    // Step 3: Prepare test data - matching exactly with template variables
+    const testData = {
+      to_email: 'rashid.kandah@gmail.com',
+      to_name: 'Test User',
+      order_id: 'TEST-' + new Date().getTime(),
+      items_list: 'Test Product 1: 1 x $10.00\nTest Product 2: 2 x $15.00',
+      total: '25.00',
+      customer_address: '123 Test Street, Test City',
+      customer_phone: '123-456-7890',
+      logo_url: 'https://cigara-co-boutique.vercel.app/logo.png',
+      from_name: 'Cigára Co.' // <-- This was missing
+    };
+
+    console.log('Sending test email with data:', testData);
+    console.log('Using Template ID:', EMAILJS_TEMPLATE_ID);
+
+
+    // Step 4: Send test email
+    const result = await emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      testData, // Send the test data directly
+      EMAILJS_PUBLIC_KEY
+    );
+
+    console.log('Test email result:', result);
+
+    if (result.status === 200) {
+      toast({
+        title: "Email Configuration Verified",
+        description: `Test email sent successfully to ${testEmail}`,
+      });
+      return true;
+    } else {
+      throw new Error(`Unexpected status code: ${result.status}`);
+    }
+
+  } catch (error: any) {
+    console.error('Email configuration verification failed:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      error: error
     });
     
-    // Return success (in a real app, this would be the API response)
-    return true;
-  } catch (error) {
-    console.error('Error sending email:', error);
     toast({
-      title: "Email sending failed",
-      description: "There was an error sending the email. Please try again.",
+      title: "Configuration Test Failed",
+      description: error.message || "Failed to verify email configuration",
       variant: "destructive",
     });
     return false;
   }
 };
 
-// Email validation helper
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+// Simple test function
+export const testEmailConfig = async () => {
+  try {
+    console.log('Testing EmailJS configuration...');
+    console.log('Config values:', {
+      publicKey: EMAILJS_PUBLIC_KEY ? 'Present' : 'Missing',
+      serviceId: EMAILJS_SERVICE_ID ? 'Present' : 'Missing',
+      templateId: EMAILJS_TEMPLATE_ID ? 'Present' : 'Missing'
+    });
+
+    // Create a test template
+    const templateParams = {
+      to_email: 'test@example.com',
+      to_name: 'Test User',
+      order_id: 'TEST-123',
+      items: [{
+        name: 'Test Item',
+        quantity: 1,
+        price: '10.00',
+        variant_name: ''
+      }],
+      total: '10.00',
+      customer_address: 'Test Address',
+      customer_phone: '123456789',
+      logo_url: 'https://cigara-co-boutique.vercel.app/logo.png'
+    };
+
+    // Send using form approach
+    const form = document.createElement('form');
+    Object.keys(templateParams).forEach(key => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = typeof templateParams[key] === 'object' 
+        ? JSON.stringify(templateParams[key]) 
+        : templateParams[key];
+      form.appendChild(input);
+    });
+
+    const result = await emailjs.sendForm(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      form,
+      EMAILJS_PUBLIC_KEY
+    );
+    
+    console.log('Test email result:', result);
+    return true;
+  } catch (error: any) {
+    console.error('Test email error:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    return false;
+  }
 };
 
-export const generateOrderConfirmationEmail = (
-  order: {
-    id: string;
-    customer: {
-      name: string;
-      email: string;
-      phone: string;
-      address: string;
-    };
-    items: {
-      name: string;
-      price: number;
-      quantity: number;
-    }[];
-    total: number;
-    createdAt: string;
-  }
-): EmailDetails => {
-  const itemsList = order.items
-    .map(item => `${item.name} x ${item.quantity} - $${(item.price * item.quantity).toFixed(2)}`)
-    .join('\n');
+interface OrderItem {
+  name: string;
+  price: number;
+  quantity: number;
+  variantName?: string;
+}
 
-  const body = `
-    Dear ${order.customer.name},
-
-    Thank you for your order with Cigára Co.! We're processing your order and will deliver it soon.
-
-    Order Details:
-    Order ID: ${order.id}
-    Date: ${new Date(order.createdAt).toLocaleDateString()}
-
-    Items:
-    ${itemsList}
-
-    Total: $${order.total.toFixed(2)}
-
-    Delivery Address:
-    ${order.customer.address}
-
-    Payment Method: Cash On Delivery
-
-    If you have any questions about your order, please contact us.
-
-    Thank you for choosing Cigára Co.
-
-    Best regards,
-    The Cigára Co. Team
-  `;
-
-  return {
-    to: order.customer.email,
-    subject: `Cigára Co. Order Confirmation #${order.id}`,
-    body: body,
+interface OrderDetails {
+  id: string;
+  customer: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
   };
+  items: OrderItem[];
+  total: number;
+}
+
+const formatItemsForTemplate = (items: OrderItem[]): string => {
+  return items.map(item => {
+    const variantInfo = item.variantName ? ` - ${item.variantName}` : '';
+    return `${item.name}${variantInfo}: ${item.quantity} x $${item.price.toFixed(2)}`;
+  }).join('\\n');
+};
+
+export const sendOrderConfirmationEmail = async (order: OrderDetails): Promise<boolean> => {
+  try {
+    console.log('EmailJS Configuration:', {
+      publicKey: EMAILJS_PUBLIC_KEY ? 'Present' : 'Missing',
+      serviceId: EMAILJS_SERVICE_ID ? 'Present' : 'Missing',
+      templateId: EMAILJS_TEMPLATE_ID ? 'Present' : 'Missing'
+    });
+
+    // Initialize EmailJS
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+
+    // Format items as a string
+    const itemsList = formatItemsForTemplate(order.items);
+
+    // Create template parameters
+    const templateParams = {
+      to_email: order.customer.email,
+      to_name: order.customer.name,
+      order_id: order.id,
+      items_list: itemsList,
+      total: order.total.toFixed(2),
+      customer_address: order.customer.address,
+      customer_phone: order.customer.phone,
+      logo_url: 'https://cigara-co-boutique.vercel.app/logo.png'
+    };
+
+    console.log('Sending email with params:', templateParams);
+
+    // Send email directly without form
+    const result = await emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      templateParams,
+      EMAILJS_PUBLIC_KEY
+    );
+
+    console.log('EmailJS Response:', result);
+
+    if (result.status === 200) {
+      toast({
+        title: "Order Confirmation Sent",
+        description: "Please check your email for order details.",
+      });
+      return true;
+    } else {
+      throw new Error(`Failed to send email. Status: ${result.status}`);
+    }
+
+  } catch (error: any) {
+    console.error('Detailed error sending email:', {
+      message: error.message,
+      stack: error.stack,
+      error: error
+    });
+    
+    toast({
+      title: "Email sending failed",
+      description: error.message || "An unexpected error occurred. Please try again or contact support.",
+      variant: "destructive",
+    });
+    return false;
+  }
 };

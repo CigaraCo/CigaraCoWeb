@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
-import { sendEmail, generateOrderConfirmationEmail } from '@/utilities/emailService';
+import { sendOrderConfirmationEmail, testEmailConfig, verifyEmailConfig } from '@/utilities/emailService';
 
 interface CheckoutFormData {
   fullName: string;
@@ -68,6 +68,8 @@ const Checkout = () => {
     }
     
     try {
+      console.log('Starting checkout process...');
+      
       const orderItems = items.map(item => ({
         id: item.id,
         name: item.name,
@@ -88,30 +90,24 @@ const Checkout = () => {
         total: getCartTotal(),
       };
       
-      // Generate a temporary order ID for email purposes
-      const tempOrderId = `ORD-${Date.now().toString().slice(-6)}`;
+      console.log('Saving order:', JSON.stringify(newOrder, null, 2));
       
-      const emailDetails = generateOrderConfirmationEmail({
-        id: tempOrderId,
+      // Save order first
+      const savedOrder = await addOrder(newOrder);
+      console.log('Order saved successfully:', savedOrder);
+      
+      // Send confirmation email
+      console.log('Attempting to send confirmation email...');
+      const emailSent = await sendOrderConfirmationEmail({
+        id: savedOrder.id,
         customer: newOrder.customer,
         items: newOrder.items,
-        total: newOrder.total,
-        // Remove the status field that's causing the error
-        createdAt: new Date().toISOString(),
+        total: newOrder.total
       });
+      console.log('Email sending result:', emailSent);
       
-      const emailSent = await sendEmail(emailDetails);
-      
-      if (!emailSent) {
-        console.error('Failed to send order confirmation email');
-        toast({
-          title: "Email delivery issue",
-          description: "We couldn't send the confirmation email. Please check your email address.",
-          variant: "destructive",
-        });
-      }
-      
-      const savedOrder = await addOrder(newOrder);
+      // Update product stock
+      console.log('Updating product stock...');
       updateProductStock(items.map(item => ({ 
         id: item.id, 
         quantity: item.quantity,
@@ -133,16 +129,51 @@ const Checkout = () => {
           email: formData.email 
         }
       });
-    } catch (error) {
-      console.error('Error processing order:', error);
+    } catch (error: any) {
+      console.error('Detailed checkout error:', {
+        message: error.message,
+        stack: error.stack,
+        error: error
+      });
+      
       toast({
         title: "Something went wrong",
-        description: "There was an error processing your order. Please try again.",
+        description: error.message || "There was an error processing your order. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const handleTestEmail = async () => {
+    try {
+      const result = await testEmailConfig();
+      if (result) {
+        toast({
+          title: "Email Test Successful",
+          description: "EmailJS configuration is working correctly.",
+        });
+      } else {
+        toast({
+          title: "Email Test Failed",
+          description: "There was an error with the EmailJS configuration. Check console for details.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Email test error:', error);
+      toast({
+        title: "Email Test Failed",
+        description: "There was an error testing the email configuration.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleVerifyEmail = async () => {
+    const testEmail = formData.email || 'test@example.com';
+    await verifyEmailConfig(testEmail);
   };
   
   if (items.length === 0) {
@@ -158,7 +189,17 @@ const Checkout = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2">
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-medium text-charcoal mb-6">Delivery Information</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-medium text-charcoal">Delivery Information</h2>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleVerifyEmail}
+                  className="text-sm"
+                >
+                  Verify Email Config
+                </Button>
+              </div>
               
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 gap-6">

@@ -208,22 +208,14 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       
       const completeOrder: Order = {
         ...newOrder,
+        created_at: newOrder.created_at,
         customer: {
-          name: orderData.customer.name,
-          email: orderData.customer.email,
-          phone: orderData.customer.phone,
-          address: orderData.customer.address,
+          name: newOrder.customer_name,
+          email: newOrder.customer_email,
+          phone: newOrder.customer_phone,
+          address: newOrder.customer_address,
         },
-        items: orderData.items.map(item => ({
-          id: item.id,
-          order_id: newOrder.id,
-          product_id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          variant_id: item.variantId || null,
-          variantName: item.variantName || null,
-        })),
+        items: newOrder.items // Use items from backend, which include variant_name and product_name
       };
       
       setOrders(prev => [completeOrder, ...prev]);

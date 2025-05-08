@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -38,12 +37,20 @@
     --radius: 0.5rem;
   }
 
-  * {
-    @apply border-border;
+  html {
+    font-family: 'Poppins', sans-serif;
   }
 
   body {
-    @apply bg-cream text-charcoal font-poppins;
+    @apply bg-cream text-charcoal min-h-screen;
+  }
+
+  #root {
+    @apply min-h-screen flex flex-col;
+  }
+
+  * {
+    @apply border-border;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -56,6 +63,14 @@
 }
 
 @layer components {
+  .container-custom {
+    @apply max-w-[1400px] mx-auto px-4 md:px-8;
+  }
+
+  .product-card {
+    @apply bg-white p-6 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md;
+  }
+
   .btn-primary {
     @apply bg-charcoal text-cream px-6 py-3 rounded hover:bg-dark-gray transition-colors duration-300;
   }
@@ -64,11 +79,7 @@
     @apply bg-transparent border border-charcoal text-charcoal px-6 py-3 rounded hover:bg-charcoal hover:text-cream transition-colors duration-300;
   }
 
-  .container-custom {
-    @apply max-w-[1400px] mx-auto px-4 md:px-8;
-  }
-
-  .product-card {
-    @apply bg-white p-6 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md;
+  .nav-link {
+    @apply text-charcoal no-underline px-4 py-2 transition-colors duration-300 hover:text-dark-gray;
   }
 }

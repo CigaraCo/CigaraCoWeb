@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,7 +55,9 @@ const AdminLogin = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-medium text-charcoal mb-2">Cigára Co.</h1>
+          <Link to="/" className="text-3xl font-medium text-charcoal mb-2 hover:text-charcoal/80 transition-colors">
+            Cigára Co.
+          </Link>
           <p className="text-dark-gray">Admin Dashboard</p>
         </div>
         

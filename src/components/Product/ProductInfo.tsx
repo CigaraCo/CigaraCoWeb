@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, ShoppingBag } from 'lucide-react';
-import { Product } from '@/integrations/supabase/client';
+import { Product, ProductVariant } from '@/integrations/supabase/client';
 import { useCart } from '@/context/CartContext';
+import VariantSelector from './VariantSelector';
 
 interface ProductInfoProps {
   name: string;
@@ -20,6 +20,7 @@ interface ProductInfoProps {
 const ProductInfo: React.FC<ProductInfoProps | { product: Product }> = (props) => {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   
   // If we receive a product prop, extract the necessary values
   if ('product' in props) {
@@ -35,14 +36,25 @@ const ProductInfo: React.FC<ProductInfoProps | { product: Product }> = (props) =
       }
     };
     
+    // Handle variant selection
+    const handleVariantSelect = (variantId: string) => {
+      setSelectedVariant(variantId);
+    };
+    
     // Handle add to cart
     const handleAddToCart = () => {
+      let variant: ProductVariant | undefined = undefined;
+      if (selectedVariant && product.variants) {
+        variant = product.variants.find(v => v.id === selectedVariant);
+      }
       addItem({
         id: product.id,
         name: product.name || 'Unnamed Product',
-        price: product.price || 0,
+        price: variant && variant.price_diff != null ? (product.price || 0) + variant.price_diff : (product.price || 0),
         quantity: quantity,
-        image: product.images && product.images.length > 0 ? product.images[0] : ''
+        image: variant && variant.image ? variant.image : (product.images && product.images.length > 0 ? product.images[0] : ''),
+        variantId: variant ? variant.id : undefined,
+        variantName: variant ? variant.name || undefined : undefined
       });
     };
     
@@ -55,10 +67,13 @@ const ProductInfo: React.FC<ProductInfoProps | { product: Product }> = (props) =
           <p className="text-dark-gray">{product.description || ''}</p>
         </div>
         
-        {!isOutOfStock && (
-          <div className="text-dark-gray mb-4">
-            <span className="font-medium">Available Stock:</span> {availableStock} units
-          </div>
+        {/* Variant Selector */}
+        {product.variants && product.variants.length > 0 && (
+          <VariantSelector
+            variants={product.variants}
+            selectedVariant={selectedVariant}
+            onVariantSelect={handleVariantSelect}
+          />
         )}
         
         {/* Quantity Selection */}
@@ -87,7 +102,7 @@ const ProductInfo: React.FC<ProductInfoProps | { product: Product }> = (props) =
         <Button 
           className="btn-primary w-full flex items-center justify-center"
           onClick={handleAddToCart}
-          disabled={isOutOfStock}
+          disabled={isOutOfStock || (product.variants && product.variants.length > 0 && !selectedVariant)}
         >
           <ShoppingBag className="mr-2 h-5 w-5" />
           {isOutOfStock ? 'Sold Out' : 'Add to Cart'}
@@ -107,12 +122,6 @@ const ProductInfo: React.FC<ProductInfoProps | { product: Product }> = (props) =
       <div className="mb-8">
         <p className="text-dark-gray">{description}</p>
       </div>
-      
-      {!isOutOfStock && (
-        <div className="text-dark-gray mb-4">
-          <span className="font-medium">Available Stock:</span> {availableStock} units
-        </div>
-      )}
       
       {/* Quantity Selection */}
       <div className="flex items-center mb-8">

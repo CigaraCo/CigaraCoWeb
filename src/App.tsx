@@ -1,15 +1,16 @@
-
+import "./App.css";
+import "./index.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
-import { AdminProvider, useAdmin } from "./context/AdminContext";
+import { AdminProvider } from "./context/AdminContext";
 import { PublicDataProvider } from "./context/PublicDataContext";
 import { AuthProvider, useAuth } from "./context/SupabaseAuthContext";
 import { supabase } from "./lib/supabase";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import Index from "./pages/Index";
@@ -30,13 +31,11 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { isAdmin, isLoading } = useAuth();
   const location = useLocation();
   
-  // Show loading or redirect
   if (isLoading) {
     return <div className="h-screen flex items-center justify-center">Loading...</div>;
   }
   
   if (!isAdmin) {
-    // Redirect to admin login page with the return path
     return <Navigate to="/admin" state={{ from: location }} replace />;
   }
   
@@ -80,33 +79,35 @@ const App = () => (
           <CartProvider>
             <AdminProvider>
               <TooltipProvider>
-                <SupabaseErrorBanner />
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/product/:id" element={<ProductDetails />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                  <Route path="/admin" element={<AdminLogin />} />
-                  <Route path="/admin/dashboard" element={
-                    <ProtectedRoute>
-                      <AdminDashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/admin/orders" element={
-                    <ProtectedRoute>
-                      <AdminOrders />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/admin/products" element={
-                    <ProtectedRoute>
-                      <AdminProducts />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                <Toaster />
-                <Sonner />
+                <div className="min-h-screen bg-cream">
+                  <SupabaseErrorBanner />
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/product/:id" element={<ProductDetails />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                    <Route path="/admin" element={<AdminLogin />} />
+                    <Route path="/admin/dashboard" element={
+                      <ProtectedRoute>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/orders" element={
+                      <ProtectedRoute>
+                        <AdminOrders />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/products" element={
+                      <ProtectedRoute>
+                        <AdminProducts />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  <Toaster />
+                  <Sonner />
+                </div>
               </TooltipProvider>
             </AdminProvider>
           </CartProvider>
